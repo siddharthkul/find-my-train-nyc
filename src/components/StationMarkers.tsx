@@ -15,6 +15,7 @@ const LABEL_THRESHOLD = 0.04;
 
 type Props = {
   region: Region | null;
+  onStationPress?: (stationId: string) => void;
 };
 
 /**
@@ -22,7 +23,7 @@ type Props = {
  * Visibility is tied to zoom level so the map isn't cluttered when
  * zoomed out.
  */
-export const StationMarkers = memo(function StationMarkers({ region }: Props) {
+export const StationMarkers = memo(function StationMarkers({ region, onStationPress }: Props) {
   const colors = useColors();
   const zoomDelta = region?.latitudeDelta ?? 0.22;
   const showStations = zoomDelta < SHOW_THRESHOLD;
@@ -54,6 +55,7 @@ export const StationMarkers = memo(function StationMarkers({ region }: Props) {
           station={station}
           showLabel={showLabels}
           colors={colors}
+          onPress={onStationPress}
         />
       ))}
     </>
@@ -66,10 +68,12 @@ const StationDot = memo(function StationDot({
   station,
   showLabel,
   colors,
+  onPress,
 }: {
   station: SubwayStation;
   showLabel: boolean;
   colors: AppColors;
+  onPress?: (stationId: string) => void;
 }) {
   const primaryColor = getRouteColor(station.routes[0] ?? '');
 
@@ -79,9 +83,12 @@ const StationDot = memo(function StationDot({
       coordinate={{ latitude: station.lat, longitude: station.lng }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={false}
-      zIndex={10}
+      zIndex={50}
+      onPress={onPress ? () => onPress(station.id) : undefined}
     >
       <View style={styles.container}>
+        {/* Invisible hit area — makes the tiny dot easy to tap */}
+        <View style={styles.hitArea} />
         <View style={[styles.dot, { borderColor: primaryColor, backgroundColor: colors.stationDot }]} />
         {showLabel ? (
           <Text
@@ -96,16 +103,25 @@ const StationDot = memo(function StationDot({
   );
 });
 
+const HIT_SIZE = 36;
+
 const styles = StyleSheet.create({
   container: {
+    width: HIT_SIZE,
+    minHeight: HIT_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  hitArea: {
+    position: 'absolute',
+    width: HIT_SIZE,
+    height: HIT_SIZE,
+  },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    borderWidth: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 2.5,
     shadowColor: '#000',
     shadowOpacity: 0.15,
     shadowRadius: 2,

@@ -13,10 +13,13 @@ import {
 } from 'react-native';
 import MapView, { MapType, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { StationArrivalSheet } from '../components/StationArrivalSheet';
 import { StationMarkers } from '../components/StationMarkers';
 import { SubwayLines } from '../components/SubwayLines';
 import { TrainMarker } from '../components/TrainMarker';
+import { useStationArrivals } from '../data/mta/hooks/useStationArrivals';
 import { getRouteColor, getRouteLineName } from '../data/mta/routeColors';
+import { subwayStations } from '../data/mta/subwayStations';
 import { useShallow } from 'zustand/react/shallow';
 import { useLiveTrains } from '../data/mta/useLiveTrains';
 import { useTrainStore } from '../data/mta/useTrainStore';
@@ -54,12 +57,23 @@ export function MapScreen() {
   useLiveTrains();
   const mapRef = useRef<MapView>(null);
   const [selectedTrainId, setSelectedTrainId] = useState<string | null>(null);
+  const [selectedStationId, setSelectedStationId] = useState<string | null>(null);
   const [currentRegion, setCurrentRegion] = useState<Region>(NYC_REGION);
   const regionRef = useRef<Region>(NYC_REGION);
   const regionTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const bottomSheet = useRef(new Animated.Value(0)).current;
+  const trainSheet = useRef(new Animated.Value(0)).current;
+  const stationSheet = useRef(new Animated.Value(0)).current;
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [mapType, setMapType] = useState<MapType>('standard');
+
+  // Poll arrivals for the selected station
+  useStationArrivals(selectedStationId);
+
+  // Look up full station object
+  const selectedStation = useMemo(
+    () => subwayStations.find((s) => s.id === selectedStationId) ?? null,
+    [selectedStationId],
+  );
 
   const cycleMapType = useCallback(() => {
     setMapType((prev) => {
@@ -127,27 +141,68 @@ export function MapScreen() {
   );
 
   useEffect(() => {
-    Animated.spring(bottomSheet, {
+    Animated.spring(trainSheet, {
       toValue: selectedTrain ? 1 : 0,
       ...tokens.motion.spring,
       useNativeDriver: true,
     }).start();
-  }, [bottomSheet, selectedTrain]);
+  }, [trainSheet, selectedTrain]);
+
+  useEffect(() => {
+    Animated.spring(stationSheet, {
+      toValue: selectedStation ? 1 : 0,
+      ...tokens.motion.spring,
+      useNativeDriver: true,
+    }).start();
+  }, [stationSheet, selectedStation]);
+
+  // Filter trains to only those within the current viewport
+  const visibleTrains = useMemo(() => {
+    const r = currentRegion;
+    const latPad = r.latitudeDelta * 0.6;
+    const lngPad = r.longitudeDelta * 0.6;
+    const minLat = r.latitude - latPad;
+    const maxLat = r.latitude + latPad;
+    const minLng = r.longitude - lngPad;
+    const maxLng = r.longitude + lngPad;
+    return trains.filter(
+      (t) =>
+        t.latitude >= minLat &&
+        t.latitude <= maxLat &&
+        t.longitude >= minLng &&
+        t.longitude <= maxLng,
+    );
+  }, [trains, currentRegion]);
+
+  const handleTrainPress = useCallback(
+    (pressedTrain: { id: string }) => {
+      setSelectedTrainId(pressedTrain.id);
+      setSelectedStationId(null);
+      void Haptics.selectionAsync();
+    },
+    [],
+  );
+
+  const handleStationPress = useCallback(
+    (stationId: string) => {
+      setSelectedStationId(stationId);
+      setSelectedTrainId(null);
+      void Haptics.selectionAsync();
+    },
+    [],
+  );
 
   const markerNodes = useMemo(
     () =>
-      trains.map((train) => (
+      visibleTrains.map((train) => (
         <TrainMarker
           key={train.id}
           train={train}
           isSelected={selectedTrainId === train.id}
-          onPress={(pressedTrain) => {
-            setSelectedTrainId(pressedTrain.id);
-            void Haptics.selectionAsync();
-          }}
+          onPress={handleTrainPress}
         />
       )),
-    [selectedTrainId, trains],
+    [selectedTrainId, visibleTrains, handleTrainPress],
   );
 
   return (
@@ -162,7 +217,7 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChange}
       >
         <SubwayLines region={currentRegion} />
-        <StationMarkers region={currentRegion} />
+        <StationMarkers region={currentRegion} onStationPress={handleStationPress} />
         {markerNodes}
       </MapView>
 
@@ -170,7 +225,7 @@ export function MapScreen() {
         <BlurView intensity={65} tint={colors.blurTint} style={[styles.infoCard, { borderColor: colors.borderSubtle }]}>
           <Text style={[styles.title, { color: colors.labelPrimary }]}>FindMyTrainNYC</Text>
           <Text style={[styles.subtitle, { color: colors.labelSecondary }]}>
-            {trains.length} live trains • {formatLastUpdated(lastUpdatedMs)}
+            {visibleTrains.length} nearby • {trains.length} systemwide • {formatLastUpdated(lastUpdatedMs)}
           </Text>
           {mode === 'mock' ? <Text style={[styles.mockNotice, { color: colors.mockNotice }]}>Mock mode (no API key)</Text> : null}
         </BlurView>
@@ -202,8 +257,8 @@ export function MapScreen() {
         </View>
       ) : null}
 
-      {/* Map controls island */}
-      <View style={[styles.mapIsland, { bottom: insets.bottom + 20, backgroundColor: colors.mapBtn }]}>
+      {/* Map controls island — shifts up when a bottom sheet is open */}
+      <View style={[styles.mapIsland, { bottom: (selectedTrain || selectedStation) ? 350 : insets.bottom + 20, backgroundColor: colors.mapBtn }]}>
         <Pressable
           onPress={cycleMapType}
           style={({ pressed }) => [
@@ -232,16 +287,16 @@ export function MapScreen() {
         style={[
           styles.detailOverlay,
           {
-            paddingBottom: insets.bottom + tokens.spacing.md,
+            paddingBottom: 0,
             transform: [
               {
-                translateY: bottomSheet.interpolate({
+                translateY: trainSheet.interpolate({
                   inputRange: [0, 1],
                   outputRange: [180, 0],
                 }),
               },
             ],
-            opacity: bottomSheet,
+            opacity: trainSheet,
           },
         ]}
       >
@@ -287,8 +342,18 @@ export function MapScreen() {
           <Text style={[styles.detailMeta, { color: colors.labelSecondary }]}>
             Lat {selectedTrain?.latitude.toFixed(4) ?? '-'} • Lon {selectedTrain?.longitude.toFixed(4) ?? '-'}
           </Text>
+          <View style={{ height: insets.bottom + tokens.spacing.sm }} />
         </BlurView>
       </Animated.View>
+
+      {/* Station arrival sheet */}
+      {selectedStation && (
+        <StationArrivalSheet
+          station={selectedStation}
+          animatedValue={stationSheet}
+          onDismiss={() => setSelectedStationId(null)}
+        />
+      )}
     </View>
   );
 }
@@ -377,13 +442,18 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    alignItems: 'center',
   },
   detailCard: {
-    width: '92%',
-    padding: tokens.spacing.md,
-    borderRadius: tokens.radius.lg,
+    width: '100%',
+    paddingTop: tokens.spacing.md,
+    paddingHorizontal: tokens.spacing.md,
+    borderTopLeftRadius: 20,
+    borderTopRightRadius: 20,
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
     borderWidth: 1,
+    borderBottomWidth: 0,
+    overflow: 'hidden',
   },
   detailHeader: {
     flexDirection: 'row',
