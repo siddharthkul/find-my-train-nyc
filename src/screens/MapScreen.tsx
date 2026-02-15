@@ -13,17 +13,22 @@ import {
 } from 'react-native';
 import MapView, { MapType, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { NearbyTrainsBar } from '../components/NearbyTrainsBar';
 import { StationArrivalSheet } from '../components/StationArrivalSheet';
 import { StationMarkers } from '../components/StationMarkers';
 import { SubwayLines } from '../components/SubwayLines';
 import { TrainMarker } from '../components/TrainMarker';
 import { useStationArrivals } from '../data/mta/hooks/useStationArrivals';
 import { getRouteColor, getRouteLineName } from '../data/mta/routeColors';
+import { useArrivalStore } from '../data/mta/stores/arrivalStore';
 import { subwayStations } from '../data/mta/subwayStations';
+import type { ArrivalPrediction } from '../data/mta/types';
 import { useShallow } from 'zustand/react/shallow';
 import { useLiveTrains } from '../data/mta/useLiveTrains';
 import { useTrainStore } from '../data/mta/useTrainStore';
 import { tokens, useColors } from '../theme/tokens';
+
+const EMPTY_ARRIVALS: ArrivalPrediction[] = [];
 
 const NYC_REGION: Region = {
   latitude: 40.7411,
@@ -65,9 +70,35 @@ export function MapScreen() {
   const stationSheet = useRef(new Animated.Value(0)).current;
   const [locationPermission, setLocationPermission] = useState<boolean | null>(null);
   const [mapType, setMapType] = useState<MapType>('standard');
+  const [mapHeading, setMapHeading] = useState(0);
+  const [isMapMoving, setIsMapMoving] = useState(false);
+  const [nearbyBarHeight, setNearbyBarHeight] = useState(0);
 
-  // Poll arrivals for the selected station
-  useStationArrivals(selectedStationId);
+  // Find the nearest station to the map center (for the nearby bar ETAs)
+  const nearestStation = useMemo(() => {
+    let best: typeof subwayStations[0] | null = null;
+    let bestDist = Infinity;
+    const cLat = currentRegion.latitude;
+    const cLng = currentRegion.longitude;
+    for (const s of subwayStations) {
+      const d = (s.lat - cLat) ** 2 + (s.lng - cLng) ** 2;
+      if (d < bestDist) {
+        bestDist = d;
+        best = s;
+      }
+    }
+    return best;
+  }, [currentRegion]);
+  const nearestStationId = nearestStation?.id ?? null;
+
+  // Poll arrivals for: selected station OR nearest station (for the nearby bar)
+  const arrivalStationId = selectedStationId ?? nearestStationId;
+  useStationArrivals(arrivalStationId);
+
+  // Get arrivals for the nearby bar from the store
+  const nearbyArrivals = useArrivalStore(
+    (state) => (nearestStationId ? state.arrivals[nearestStationId] : undefined) ?? EMPTY_ARRIVALS,
+  );
 
   // Look up full station object
   const selectedStation = useMemo(
@@ -84,11 +115,31 @@ export function MapScreen() {
     void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
   }, []);
 
-  // Request foreground location permission on mount
+  // Request foreground location permission on mount and center on user
   useEffect(() => {
     (async () => {
       const { status } = await Location.requestForegroundPermissionsAsync();
-      setLocationPermission(status === 'granted');
+      const granted = status === 'granted';
+      setLocationPermission(granted);
+
+      if (granted) {
+        try {
+          const loc = await Location.getCurrentPositionAsync({
+            accuracy: Location.Accuracy.Balanced,
+          });
+          mapRef.current?.animateToRegion(
+            {
+              latitude: loc.coords.latitude,
+              longitude: loc.coords.longitude,
+              latitudeDelta: 0.025,
+              longitudeDelta: 0.025,
+            },
+            600,
+          );
+        } catch {
+          // Fall back to default NYC view
+        }
+      }
     })();
   }, []);
 
@@ -131,6 +182,15 @@ export function MapScreen() {
           Math.abs(prev.longitude - region.longitude) >
             prev.longitudeDelta * 0.3;
         return zoomChanged || panned ? region : prev;
+      });
+
+      // Sync map heading so train direction arrows stay correct when rotated
+      mapRef.current?.getCamera().then((cam) => {
+        setMapHeading((prev) => {
+          const h = Math.round(cam.heading);
+          return Math.abs(prev - h) > 2 ? h : prev;
+        });
+        setIsMapMoving(false);
       });
     }, 150);
   }, []);
@@ -199,10 +259,12 @@ export function MapScreen() {
           key={train.id}
           train={train}
           isSelected={selectedTrainId === train.id}
+          mapHeading={mapHeading}
+          hideArrow={isMapMoving && mapHeading !== 0}
           onPress={handleTrainPress}
         />
       )),
-    [selectedTrainId, visibleTrains, handleTrainPress],
+    [selectedTrainId, visibleTrains, handleTrainPress, mapHeading, isMapMoving],
   );
 
   return (
@@ -214,6 +276,7 @@ export function MapScreen() {
         mapType={mapType}
         showsUserLocation={!!locationPermission}
         showsMyLocationButton={false}
+        onRegionChange={() => setIsMapMoving(true)}
         onRegionChangeComplete={handleRegionChange}
       >
         <SubwayLines region={currentRegion} />
@@ -257,8 +320,21 @@ export function MapScreen() {
         </View>
       ) : null}
 
-      {/* Map controls island — shifts up when a bottom sheet is open */}
-      <View style={[styles.mapIsland, { bottom: (selectedTrain || selectedStation) ? 350 : insets.bottom + 20, backgroundColor: colors.mapBtn }]}>
+      {/* Nearby trains bar — shown when no detail sheet is open */}
+      {!selectedTrain && !selectedStation && (
+        <NearbyTrainsBar
+          arrivals={nearbyArrivals}
+          stationName={nearestStation?.name ?? ''}
+          onSearchPress={() => {
+            // TODO: open full-screen search
+            void Haptics.selectionAsync();
+          }}
+          onHeightChange={setNearbyBarHeight}
+        />
+      )}
+
+      {/* Map controls island — floats above whichever bottom panel is visible */}
+      <View style={[styles.mapIsland, { bottom: (selectedTrain || selectedStation) ? 350 : (nearbyBarHeight > 0 ? nearbyBarHeight + 12 : insets.bottom + 20), backgroundColor: colors.mapBtn }]}>
         <Pressable
           onPress={cycleMapType}
           style={({ pressed }) => [

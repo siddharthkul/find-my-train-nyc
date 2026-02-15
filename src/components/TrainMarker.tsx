@@ -7,12 +7,19 @@ import { getRouteBadgeImage } from '../data/mta/markerImages';
 type Props = {
   train: Train;
   isSelected: boolean;
+  mapHeading: number;
+  hideArrow?: boolean;
   onPress: (train: Train) => void;
 };
 
 const BADGE_SIZE = 28;
 const ARROW_SIZE = 10;
-const ARROW_OFFSET = BADGE_SIZE / 2 + ARROW_SIZE / 2 + 1;
+const ARROW_OFFSET = BADGE_SIZE / 2 + ARROW_SIZE / 2 + 2;
+const WRAPPER_SIZE = BADGE_SIZE + ARROW_SIZE * 2 + 6;
+const CENTER = WRAPPER_SIZE / 2;
+const HALF_ARROW = (ARROW_SIZE + 4) / 2;
+
+const DEG_TO_RAD = Math.PI / 180;
 
 /** Dark arrow with a white outline — visible over any badge or map tile. */
 const ARROW_COLOR = '#1C1C1E';
@@ -21,26 +28,30 @@ const ARROW_OUTLINE_COLOR = '#FFFFFF';
 /**
  * Renders a train on the map with:
  *   - The route badge (colored circle with route letter/number)
- *   - A small triangular arrow rotated to the train's actual bearing,
- *     positioned on the edge of the badge pointing in the direction
- *     of travel.
+ *   - A small triangular arrow positioned on the edge of the badge
+ *     pointing in the direction of travel.
  *
- * The arrow is placed using a translate + rotate transform so it
- * orbits around the badge center at the correct angle.
- *
- * Uses `tracksViewChanges={false}` — rendered once, cached as bitmap.
+ * Arrow placement uses explicit trig (sin/cos) to orbit around
+ * the badge center — independent of CSS transform quirks.
  */
 export const TrainMarker = memo(function TrainMarker({
   train,
   isSelected,
+  mapHeading,
+  hideArrow,
   onPress,
 }: Props) {
   const badgeImage = getRouteBadgeImage(train.routeId);
-  const hasDirection = train.direction !== 'UNK';
+  const showArrow = train.direction !== 'UNK' && !hideArrow;
 
-  // Bearing is clockwise from north (0° = up).
-  // We position the arrow by rotating around the badge center.
-  const bearingDeg = train.bearing;
+  // Adjust bearing for map rotation
+  const bearingDeg = train.bearing - mapHeading;
+  const bearingRad = bearingDeg * DEG_TO_RAD;
+
+  // Position the arrow on a circle around the badge using trig
+  // sin(bearing) gives X offset (east positive), -cos(bearing) gives Y offset (north = up = negative Y)
+  const arrowLeft = CENTER + ARROW_OFFSET * Math.sin(bearingRad) - HALF_ARROW;
+  const arrowTop = CENTER - ARROW_OFFSET * Math.cos(bearingRad) - HALF_ARROW;
 
   return (
     <Marker
@@ -50,7 +61,7 @@ export const TrainMarker = memo(function TrainMarker({
         longitude: train.longitude,
       }}
       anchor={{ x: 0.5, y: 0.5 }}
-      tracksViewChanges={false}
+      tracksViewChanges={mapHeading !== 0}
       zIndex={100}
       opacity={isSelected ? 1 : 0.92}
       onPress={() => onPress(train)}
@@ -63,16 +74,15 @@ export const TrainMarker = memo(function TrainMarker({
           resizeMode="contain"
         />
 
-        {/* Directional arrow — orbits around the badge */}
-        {hasDirection && (
+        {/* Directional arrow — positioned with trig, rotated to face outward */}
+        {showArrow && (
           <View
             style={[
               styles.arrowAnchor,
               {
-                transform: [
-                  { rotate: `${bearingDeg}deg` },
-                  { translateY: -ARROW_OFFSET },
-                ],
+                left: arrowLeft,
+                top: arrowTop,
+                transform: [{ rotate: `${bearingDeg}deg` }],
               },
             ]}
           >
@@ -89,8 +99,8 @@ export const TrainMarker = memo(function TrainMarker({
 
 const styles = StyleSheet.create({
   wrapper: {
-    width: BADGE_SIZE + ARROW_SIZE * 2 + 4,
-    height: BADGE_SIZE + ARROW_SIZE * 2 + 4,
+    width: WRAPPER_SIZE,
+    height: WRAPPER_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -103,7 +113,7 @@ const styles = StyleSheet.create({
     width: ARROW_SIZE + 4,
     height: ARROW_SIZE + 4,
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-start',
   },
   arrowOutline: {
     position: 'absolute',
