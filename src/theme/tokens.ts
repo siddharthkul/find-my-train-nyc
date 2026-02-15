@@ -3,7 +3,29 @@ import { Appearance } from 'react-native';
 
 // ── Color palettes ──────────────────────────────────────────────────
 
-const lightColors = {
+type ColorPalette = {
+  background: string;
+  card: string;
+  labelPrimary: string;
+  labelSecondary: string;
+  borderSubtle: string;
+  danger: string;
+  dangerBorder: string;
+  dangerText: string;
+  tint: string;
+  accent: string;
+  mockNotice: string;
+  mapBtn: string;
+  mapBtnPressed: string;
+  dismissBg: string;
+  badgeBorder: string;
+  blurTint: 'light' | 'dark';
+  stationDot: string;
+  stationLabel: string;
+  stationLabelBg: string;
+};
+
+const lightColors: ColorPalette = {
   background: '#F2F2F7',
   card: '#FFFFFFCC',
   labelPrimary: '#0A0A0A',
@@ -19,13 +41,13 @@ const lightColors = {
   mapBtnPressed: '#E8E8ED',
   dismissBg: '#FFFFFFCC',
   badgeBorder: '#FFFFFFE6',
-  blurTint: 'light' as const,
+  blurTint: 'light',
   stationDot: '#FFFFFF',
   stationLabel: '#1C1C1E',
   stationLabelBg: 'rgba(255,255,255,0.85)',
 };
 
-const darkColors: typeof lightColors = {
+const darkColors: ColorPalette = {
   background: '#000000',
   card: '#1C1C1ECC',
   labelPrimary: '#F5F5F7',
@@ -47,7 +69,7 @@ const darkColors: typeof lightColors = {
   stationLabelBg: 'rgba(28,28,30,0.85)',
 };
 
-export type AppColors = typeof lightColors;
+export type AppColors = ColorPalette;
 
 // ── Hook ────────────────────────────────────────────────────────────
 

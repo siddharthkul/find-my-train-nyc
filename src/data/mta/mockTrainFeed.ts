@@ -1,4 +1,4 @@
-import { Train } from '../../types/train';
+import type { Train } from './types';
 
 const SEED_TRAINS: Array<Pick<Train, 'id' | 'routeId' | 'latitude' | 'longitude' | 'bearing'>> = [
   { id: 'mock-A-1', routeId: 'A', latitude: 40.7502, longitude: -73.9934, bearing: 190 },
@@ -29,6 +29,8 @@ export function getMockTrains(): Train[] {
       longitude: jitter(seed.longitude, 0.0045),
       bearing: nextBearing,
       direction: nextBearing < 90 || nextBearing >= 315 ? 'N' : nextBearing < 180 ? 'E' : nextBearing < 270 ? 'S' : 'W',
+      tripId: null,
+      currentStopId: null,
       lastUpdatedMs: now,
     };
   });
