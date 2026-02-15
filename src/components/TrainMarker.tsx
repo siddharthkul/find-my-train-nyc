@@ -6,10 +6,8 @@ import { getRouteBadgeImage } from '../data/mta/markerImages';
 
 type Props = {
   train: Train;
-  isSelected: boolean;
   mapHeading: number;
   hideArrow?: boolean;
-  onPress: (train: Train) => void;
 };
 
 const BADGE_SIZE = 28;
@@ -36,10 +34,8 @@ const ARROW_OUTLINE_COLOR = '#FFFFFF';
  */
 export const TrainMarker = memo(function TrainMarker({
   train,
-  isSelected,
   mapHeading,
   hideArrow,
-  onPress,
 }: Props) {
   const badgeImage = getRouteBadgeImage(train.routeId);
   const showArrow = train.direction !== 'UNK' && !hideArrow;
@@ -63,10 +59,9 @@ export const TrainMarker = memo(function TrainMarker({
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={mapHeading !== 0}
       zIndex={100}
-      opacity={isSelected ? 1 : 0.92}
-      onPress={() => onPress(train)}
+      tappable={false}
     >
-      <View style={styles.wrapper}>
+      <View style={styles.wrapper} pointerEvents="none">
         {/* Route badge */}
         <Image
           source={badgeImage}

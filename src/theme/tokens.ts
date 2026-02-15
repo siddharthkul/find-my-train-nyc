@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Appearance } from 'react-native';
+import { Appearance, StyleSheet } from 'react-native';
 
 // ── Color palettes ──────────────────────────────────────────────────
 
@@ -23,6 +23,18 @@ type ColorPalette = {
   stationDot: string;
   stationLabel: string;
   stationLabelBg: string;
+  /** Color for box-shadow / elevation */
+  shadow: string;
+  /** Text color for route badges (white in both themes) */
+  badgeText: string;
+  /** Grab-handle on bottom sheets */
+  handle: string;
+  /** Subtle material tint layered over glass surfaces */
+  sheetFill: string;
+  /** Thin highlight stroke around glass surfaces */
+  sheetStroke: string;
+  /** Search field fill inside glass sheets */
+  searchFieldBg: string;
 };
 
 const lightColors: ColorPalette = {
@@ -45,6 +57,12 @@ const lightColors: ColorPalette = {
   stationDot: '#FFFFFF',
   stationLabel: '#1C1C1E',
   stationLabelBg: 'rgba(255,255,255,0.85)',
+  shadow: '#000000',
+  badgeText: '#FFFFFF',
+  handle: '#3C3C4399',
+  sheetFill: 'rgba(255,255,255,0.18)',
+  sheetStroke: 'rgba(255,255,255,0.24)',
+  searchFieldBg: 'rgba(0,0,0,0.10)',
 };
 
 const darkColors: ColorPalette = {
@@ -67,6 +85,12 @@ const darkColors: ColorPalette = {
   stationDot: '#1C1C1E',
   stationLabel: '#F5F5F7',
   stationLabelBg: 'rgba(28,28,30,0.85)',
+  shadow: '#000000',
+  badgeText: '#FFFFFF',
+  handle: '#EBEBF599',
+  sheetFill: 'rgba(12,14,20,0.38)',
+  sheetStroke: 'rgba(255,255,255,0.10)',
+  searchFieldBg: 'rgba(0,0,0,0.42)',
 };
 
 export type AppColors = ColorPalette;
@@ -105,17 +129,50 @@ export function useIsDark(): boolean {
 // ── Non-color tokens (shared across themes) ─────────────────────────
 
 export const tokens = {
+  /** 4-px grid spacing scale */
   spacing: {
-    xs: 6,
-    sm: 10,
-    md: 14,
-    lg: 20,
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
   },
+
   radius: {
-    md: 14,
-    lg: 22,
+    sm: 8,
+    md: 12,
+    lg: 20,
+    xl: 28,
     full: 999,
   },
+
+  font: {
+    size: {
+      xs: 10,
+      sm: 12,
+      md: 14,
+      lg: 16,
+      xl: 18,
+      title: 22,
+    },
+    weight: {
+      regular: '400' as const,
+      medium: '500' as const,
+      semibold: '600' as const,
+      bold: '700' as const,
+    },
+  },
+
+  /** Reusable component sizes (badges, buttons, tap targets) */
+  size: {
+    badgeSm: 22,
+    badgeMd: 30,
+    badgeLg: 36,
+    hitSlop: 36,
+    islandBtn: 46,
+  },
+
   motion: {
     spring: {
       damping: 18,
@@ -124,3 +181,57 @@ export const tokens = {
     },
   },
 };
+
+// ── Shared bottom-sheet styles ──────────────────────────────────────
+//
+// All three bottom panels (train detail, station arrivals, nearby bar)
+// share this base so they look identical.  Each screen spreads these
+// and adds its own specifics (maxHeight, content area, etc.).
+
+/** Gap between the floating sheet and screen edges */
+const SHEET_SIDE = 4;
+const SHEET_BOTTOM = 8;
+
+export const sheetStyles = StyleSheet.create({
+  /** Floating card — generous radius, roomy padding */
+  card: {
+    borderRadius: tokens.radius.xl,
+    overflow: 'hidden',
+    paddingTop: tokens.spacing.xl,
+    paddingHorizontal: tokens.spacing.xl,
+    paddingBottom: tokens.spacing.xl,
+    // Stronger depth cue so glass reads as floating above map tiles.
+    shadowColor: '#000000',
+    shadowOpacity: 0.24,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 10,
+  },
+  /** Small grab indicator at the top of a sheet */
+  handle: {
+    width: 36,
+    height: 5,
+    borderRadius: 2.5,
+    alignSelf: 'center' as const,
+    marginBottom: tokens.spacing.md,
+  },
+  /** Standard header row: title on the left, Done on the right */
+  headerRow: {
+    flexDirection: 'row' as const,
+    justifyContent: 'space-between' as const,
+    alignItems: 'center' as const,
+    marginBottom: tokens.spacing.md,
+  },
+  /** Overlay wrapper that floats the sheet above the bottom edge */
+  overlay: {
+    position: 'absolute' as const,
+    left: SHEET_SIDE,
+    right: SHEET_SIDE,
+    bottom: SHEET_BOTTOM,
+  },
+  /** "Done" button text */
+  doneText: {
+    fontSize: tokens.font.size.lg,
+    fontWeight: tokens.font.weight.semibold,
+  },
+});

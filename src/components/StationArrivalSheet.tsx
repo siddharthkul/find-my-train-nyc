@@ -1,5 +1,4 @@
 import { Ionicons } from '@expo/vector-icons';
-import { BlurView } from 'expo-blur';
 import * as Haptics from 'expo-haptics';
 import { memo, useEffect, useMemo, useState } from 'react';
 import {
@@ -16,7 +15,8 @@ import { getRouteColor } from '../data/mta/routeColors';
 import { useArrivalStore } from '../data/mta/stores/arrivalStore';
 import type { SubwayStation } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
-import { type AppColors, tokens, useColors } from '../theme/tokens';
+import { type AppColors, sheetStyles, tokens, useColors } from '../theme/tokens';
+import { GlassCard } from './GlassCard';
 
 // ── Types ──────────────────────────────────────────────────────────
 
@@ -105,13 +105,15 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
   const groups = useMemo(() => groupByDirection(arrivals), [arrivals]);
   const nowMs = Date.now();
 
+  // Distinguish loading from genuinely empty
+  const hasLoadedOnce = rawArrivals !== undefined;
+
   return (
     <Animated.View
       pointerEvents="auto"
       style={[
-        styles.overlay,
+        sheetStyles.overlay,
         {
-          paddingBottom: 0,
           transform: [
             {
               translateY: animatedValue.interpolate({
@@ -124,13 +126,23 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
         },
       ]}
     >
-      <BlurView
+      <GlassCard
         intensity={80}
-        tint={colors.blurTint}
-        style={[styles.card, { borderColor: colors.borderSubtle }]}
+        style={[
+          sheetStyles.card,
+          {
+            maxHeight: 360,
+            backgroundColor: colors.sheetFill,
+            borderWidth: StyleSheet.hairlineWidth,
+            borderColor: colors.sheetStroke,
+          },
+        ]}
       >
+        {/* Handle */}
+        <View style={[sheetStyles.handle, { backgroundColor: colors.handle }]} />
+
         {/* Header */}
-        <View style={styles.header}>
+        <View style={sheetStyles.headerRow}>
           <View style={styles.headerLeft}>
             <Text
               style={[styles.stationName, { color: colors.labelPrimary }]}
@@ -147,7 +159,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
                     { backgroundColor: getRouteColor(route) },
                   ]}
                 >
-                  <Text style={styles.smallBadgeText}>{route}</Text>
+                  <Text style={[styles.smallBadgeText, { color: colors.badgeText }]}>{route}</Text>
                 </View>
               ))}
               {station.ada && (
@@ -161,13 +173,13 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
             </View>
           </View>
           <Pressable
-            hitSlop={8}
+            hitSlop={tokens.size.hitSlop}
             onPress={() => {
               onDismiss();
               void Haptics.selectionAsync();
             }}
           >
-            <Text style={[styles.doneLabel, { color: colors.accent }]}>
+            <Text style={[sheetStyles.doneText, { color: colors.accent }]}>
               Done
             </Text>
           </Pressable>
@@ -180,17 +192,17 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
             <Text
               style={[styles.loadingText, { color: colors.labelSecondary }]}
             >
-              Loading arrivals...
+              Loading arrivals…
             </Text>
           </View>
         ) : groups.length === 0 ? (
           <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
-            No upcoming trains at this station
+            {hasLoadedOnce ? 'No upcoming trains at this station' : 'Loading arrivals…'}
           </Text>
         ) : (
           <ScrollView
             style={styles.scrollArea}
-            contentContainerStyle={{ paddingBottom: insets.bottom + tokens.spacing.sm }}
+            contentContainerStyle={{ paddingBottom: tokens.spacing.sm }}
             showsVerticalScrollIndicator={false}
           >
             {groups.map((group) => (
@@ -203,7 +215,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
             ))}
           </ScrollView>
         )}
-      </BlurView>
+      </GlassCard>
     </Animated.View>
   );
 });
@@ -254,14 +266,14 @@ const ArrivalRow = memo(function ArrivalRow({
   return (
     <View style={styles.arrivalRow}>
       <View style={[styles.arrivalBadge, { backgroundColor: routeColor }]}>
-        <Text style={styles.arrivalBadgeText}>{arrival.routeId}</Text>
+        <Text style={[styles.arrivalBadgeText, { color: colors.badgeText }]}>{arrival.routeId}</Text>
       </View>
       <Text
         style={[
           styles.countdown,
           {
             color: isNow ? colors.accent : colors.labelPrimary,
-            fontWeight: isNow ? '700' : '600',
+            fontWeight: isNow ? tokens.font.weight.bold : tokens.font.weight.semibold,
           },
         ]}
       >
@@ -286,81 +298,51 @@ const ArrivalRow = memo(function ArrivalRow({
 // ── Styles ─────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
-  overlay: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-  },
-  card: {
-    width: '100%',
-    maxHeight: 360,
-    paddingTop: tokens.spacing.md,
-    paddingHorizontal: tokens.spacing.md,
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderBottomLeftRadius: 0,
-    borderBottomRightRadius: 0,
-    borderWidth: 1,
-    borderBottomWidth: 0,
-    overflow: 'hidden',
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
   headerLeft: {
     flex: 1,
     marginRight: tokens.spacing.sm,
   },
   stationName: {
-    fontSize: 17,
-    fontWeight: '700',
+    fontSize: tokens.font.size.xl,
+    fontWeight: tokens.font.weight.bold,
   },
   routeBadges: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     alignItems: 'center',
-    marginTop: 6,
-    gap: 4,
+    marginTop: tokens.spacing.sm,
+    gap: tokens.spacing.xs,
   },
   smallBadge: {
-    width: 22,
-    height: 22,
-    borderRadius: 11,
+    width: tokens.size.badgeSm,
+    height: tokens.size.badgeSm,
+    borderRadius: tokens.size.badgeSm / 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   smallBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 11,
-    fontWeight: '700',
+    fontSize: tokens.font.size.xs + 1,
+    fontWeight: tokens.font.weight.bold,
   },
   adaIcon: {
     marginLeft: 2,
-  },
-  doneLabel: {
-    fontSize: 14,
-    fontWeight: '600',
-    marginTop: 2,
   },
   loadingRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: tokens.spacing.md,
+    paddingVertical: tokens.spacing.lg,
     gap: tokens.spacing.sm,
   },
   loadingText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: tokens.font.size.md,
+    fontWeight: tokens.font.weight.medium,
   },
   emptyText: {
-    fontSize: 13,
-    fontWeight: '500',
+    fontSize: tokens.font.size.md,
+    fontWeight: tokens.font.weight.medium,
     textAlign: 'center',
-    paddingVertical: tokens.spacing.md,
+    paddingVertical: tokens.spacing.lg,
   },
   scrollArea: {
     marginTop: tokens.spacing.sm,
@@ -369,41 +351,40 @@ const styles = StyleSheet.create({
     marginBottom: tokens.spacing.sm,
   },
   groupLabel: {
-    fontSize: 12,
-    fontWeight: '600',
+    fontSize: tokens.font.size.sm,
+    fontWeight: tokens.font.weight.semibold,
     textTransform: 'uppercase',
     letterSpacing: 0.5,
-    marginBottom: 6,
+    marginBottom: tokens.spacing.sm,
   },
   arrivalRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: 5,
+    paddingVertical: tokens.spacing.xs + 1,
     gap: tokens.spacing.sm,
   },
   arrivalBadge: {
-    width: 26,
-    height: 26,
-    borderRadius: 13,
+    width: tokens.size.badgeSm + 4,
+    height: tokens.size.badgeSm + 4,
+    borderRadius: (tokens.size.badgeSm + 4) / 2,
     justifyContent: 'center',
     alignItems: 'center',
   },
   arrivalBadgeText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
+    fontSize: tokens.font.size.sm,
+    fontWeight: tokens.font.weight.bold,
   },
   countdown: {
-    fontSize: 15,
+    fontSize: tokens.font.size.lg,
     flex: 1,
   },
   delayBadge: {
-    paddingHorizontal: 6,
+    paddingHorizontal: tokens.spacing.sm,
     paddingVertical: 2,
-    borderRadius: 6,
+    borderRadius: tokens.radius.sm,
   },
   delayText: {
-    fontSize: 10,
-    fontWeight: '700',
+    fontSize: tokens.font.size.xs,
+    fontWeight: tokens.font.weight.bold,
   },
 });

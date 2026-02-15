@@ -6,7 +6,7 @@ import {
   subwayStations,
   type SubwayStation,
 } from '../data/mta/subwayStations';
-import { type AppColors, useColors } from '../theme/tokens';
+import { type AppColors, tokens, useColors } from '../theme/tokens';
 
 /** Only show station dots when zoomed in past this delta. */
 const SHOW_THRESHOLD = 0.12;
@@ -16,6 +16,8 @@ const LABEL_THRESHOLD = 0.04;
 type Props = {
   region: Region | null;
   onStationPress?: (stationId: string) => void;
+  /** Station whose arrivals are currently shown — gets a highlight ring */
+  activeStationId?: string | null;
 };
 
 /**
@@ -23,7 +25,7 @@ type Props = {
  * Visibility is tied to zoom level so the map isn't cluttered when
  * zoomed out.
  */
-export const StationMarkers = memo(function StationMarkers({ region, onStationPress }: Props) {
+export const StationMarkers = memo(function StationMarkers({ region, onStationPress, activeStationId }: Props) {
   const colors = useColors();
   const zoomDelta = region?.latitudeDelta ?? 0.22;
   const showStations = zoomDelta < SHOW_THRESHOLD;
@@ -54,6 +56,7 @@ export const StationMarkers = memo(function StationMarkers({ region, onStationPr
           key={station.id}
           station={station}
           showLabel={showLabels}
+          isActive={station.id === activeStationId}
           colors={colors}
           onPress={onStationPress}
         />
@@ -64,14 +67,21 @@ export const StationMarkers = memo(function StationMarkers({ region, onStationPr
 
 // ── individual station marker ───────────────────────────────────────
 
+const DOT_SIZE = 14;
+const ACTIVE_DOT_SIZE = 20;
+const ACTIVE_RING_SIZE = 30;
+const HIT_SIZE = 40;
+
 const StationDot = memo(function StationDot({
   station,
   showLabel,
+  isActive,
   colors,
   onPress,
 }: {
   station: SubwayStation;
   showLabel: boolean;
+  isActive: boolean;
   colors: AppColors;
   onPress?: (stationId: string) => void;
 }) {
@@ -83,31 +93,61 @@ const StationDot = memo(function StationDot({
       coordinate={{ latitude: station.lat, longitude: station.lng }}
       anchor={{ x: 0.5, y: 0.5 }}
       tracksViewChanges={false}
-      zIndex={50}
+      zIndex={isActive ? 100 : 50}
       onPress={onPress ? () => onPress(station.id) : undefined}
     >
       <View style={styles.container}>
         {/* Invisible hit area — makes the tiny dot easy to tap */}
         <View style={styles.hitArea} />
-        <View style={[styles.dot, { borderColor: primaryColor, backgroundColor: colors.stationDot }]} />
-        {showLabel ? (
-          <Text
-            style={[styles.label, { color: colors.stationLabel, backgroundColor: colors.stationLabelBg }]}
-            numberOfLines={1}
-          >
-            {station.name}
-          </Text>
+
+        {isActive ? (
+          /* Active station — larger dot with a pulsing accent ring */
+          <View style={[styles.activeRing, { borderColor: primaryColor, shadowColor: primaryColor }]}>
+            <View
+              style={[
+                styles.activeDot,
+                { borderColor: primaryColor, backgroundColor: colors.stationDot },
+              ]}
+            />
+          </View>
+        ) : (
+          /* Normal station dot */
+          <View style={[styles.dotOuter, { shadowColor: colors.shadow }]}>
+            <View
+              style={[
+                styles.dot,
+                { borderColor: primaryColor, backgroundColor: colors.stationDot },
+              ]}
+            />
+          </View>
+        )}
+
+        {(showLabel || isActive) ? (
+          <View style={[
+            styles.labelPill,
+            isActive && styles.activeLabelPill,
+            { backgroundColor: colors.stationLabelBg, shadowColor: colors.shadow },
+          ]}>
+            <Text
+              style={[
+                styles.labelText,
+                isActive && styles.activeLabelText,
+                { color: colors.stationLabel },
+              ]}
+              numberOfLines={1}
+            >
+              {station.name}
+            </Text>
+          </View>
         ) : null}
       </View>
     </Marker>
   );
 });
 
-const HIT_SIZE = 36;
-
 const styles = StyleSheet.create({
   container: {
-    width: HIT_SIZE,
+    minWidth: HIT_SIZE,
     minHeight: HIT_SIZE,
     alignItems: 'center',
     justifyContent: 'center',
@@ -117,24 +157,57 @@ const styles = StyleSheet.create({
     width: HIT_SIZE,
     height: HIT_SIZE,
   },
-  dot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    borderWidth: 2.5,
-    shadowColor: '#000',
-    shadowOpacity: 0.15,
-    shadowRadius: 2,
+  dotOuter: {
+    shadowOpacity: 0.35,
+    shadowRadius: 3,
     shadowOffset: { width: 0, height: 1 },
+    elevation: 4,
   },
-  label: {
-    marginTop: 2,
-    fontSize: 9,
-    fontWeight: '600',
-    paddingHorizontal: 3,
-    paddingVertical: 1,
-    borderRadius: 3,
-    overflow: 'hidden',
-    maxWidth: 120,
+  dot: {
+    width: DOT_SIZE,
+    height: DOT_SIZE,
+    borderRadius: DOT_SIZE / 2,
+    borderWidth: 3,
+  },
+  activeRing: {
+    width: ACTIVE_RING_SIZE,
+    height: ACTIVE_RING_SIZE,
+    borderRadius: ACTIVE_RING_SIZE / 2,
+    borderWidth: 2.5,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowOpacity: 0.5,
+    shadowRadius: 6,
+    shadowOffset: { width: 0, height: 0 },
+    elevation: 6,
+  },
+  activeDot: {
+    width: ACTIVE_DOT_SIZE,
+    height: ACTIVE_DOT_SIZE,
+    borderRadius: ACTIVE_DOT_SIZE / 2,
+    borderWidth: 3.5,
+  },
+  activeLabelPill: {
+    shadowOpacity: 0.35,
+  },
+  activeLabelText: {
+    fontSize: tokens.font.size.sm,
+    fontWeight: tokens.font.weight.bold,
+  },
+  labelPill: {
+    marginTop: 3,
+    paddingHorizontal: tokens.spacing.sm,
+    paddingVertical: 2,
+    borderRadius: tokens.radius.sm,
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 1 },
+    elevation: 3,
+    maxWidth: 140,
+  },
+  labelText: {
+    fontSize: tokens.font.size.xs + 1,
+    fontWeight: tokens.font.weight.bold,
+    textAlign: 'center',
   },
 });
