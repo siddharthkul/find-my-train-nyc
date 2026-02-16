@@ -124,9 +124,9 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
   const hasLoadedOnce = arrivals.length > 0 || rows.length > 0;
 
   return (
-    <View style={[styles.container, { bottom: insets.bottom + 6 }]} onLayout={handleLayout}>
+    <View style={styles.container} onLayout={handleLayout}>
       <GlassCard
-        intensity={80}
+        intensity={70}
         style={[
           sheetStyles.card,
           {
@@ -145,37 +145,43 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
           }}
         >
           <Ionicons name="search" size={18} color={colors.labelSecondary} />
-          <Text style={[styles.searchPlaceholder, { color: colors.labelSecondary }]}>
+          <Text
+            style={[styles.searchPlaceholder, { color: colors.labelSecondary }]}
+          >
             Where to?
           </Text>
         </Pressable>
 
-        {/* Station header */}
+        {/* Station header — always shows name + route badges */}
         {stationName ? (
-          isPinned ? (
-            <View style={styles.pinnedHeader}>
-              <Text
-                style={[styles.pinnedStationName, { color: colors.labelPrimary }]}
-                numberOfLines={1}
-              >
-                {stationName}
-              </Text>
-              {station?.routes ? (
-                station.routes.map((route) => (
+          <View style={styles.stationHeader}>
+            <Text
+              style={[styles.stationName, { color: colors.labelPrimary }]}
+              numberOfLines={1}
+            >
+              {stationName}
+            </Text>
+            {station?.routes
+              ? station.routes.map((route) => (
                   <View
                     key={route}
-                    style={[styles.miniRouteBadge, { backgroundColor: getRouteColor(route) }]}
+                    style={[
+                      styles.miniRouteBadge,
+                      { backgroundColor: getRouteColor(route) },
+                    ]}
                   >
-                    <Text style={[styles.miniRouteText, { color: getRouteTextColor(route) }]}>{route}</Text>
+                    <Text
+                      style={[
+                        styles.miniRouteText,
+                        { color: getRouteTextColor(route) },
+                      ]}
+                    >
+                      {route}
+                    </Text>
                   </View>
                 ))
-              ) : null}
-            </View>
-          ) : (
-            <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]} numberOfLines={1}>
-              Arriving at {stationName}
-            </Text>
-          )
+              : null}
+          </View>
         ) : null}
 
         {/* Arrivals list */}
@@ -186,24 +192,35 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
             scrollEnabled={true}
             showsVerticalScrollIndicator={false}
             style={styles.list}
-            contentContainerStyle={{ paddingBottom: tokens.spacing.sm }}
+            contentContainerStyle={{
+              paddingBottom: insets.bottom,
+            }}
             renderItem={({ item }) => (
               <ArrivalItem item={item} colors={colors} />
             )}
             ItemSeparatorComponent={() => (
-              <View style={[styles.separator, { backgroundColor: colors.borderSubtle }]} />
+              <View
+                style={[
+                  styles.separator,
+                  { backgroundColor: colors.borderSubtle },
+                ]}
+              />
             )}
           />
         ) : (
-          <View style={{ paddingBottom: tokens.spacing.lg }}>
+          <View style={{ paddingBottom: insets.bottom + tokens.spacing.sm }}>
             {hasLoadedOnce ? (
-              <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
+              <Text
+                style={[styles.emptyText, { color: colors.labelSecondary }]}
+              >
                 No trains arriving soon
               </Text>
             ) : (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.labelSecondary} />
-                <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
+                <Text
+                  style={[styles.emptyText, { color: colors.labelSecondary }]}
+                >
                   Loading arrivals…
                 </Text>
               </View>
@@ -266,14 +283,14 @@ const ArrivalItem = memo(function ArrivalItem({
 
 const styles = StyleSheet.create({
   container: {
-    position: 'absolute',
-    left: 4,
-    right: 4,
-    bottom: 8,
+    position: "absolute",
+    left: 16,
+    right: 16,
+    bottom: 16,
   },
   searchBar: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     height: 48,
     borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.lg,
@@ -283,15 +300,7 @@ const styles = StyleSheet.create({
     fontSize: tokens.font.size.lg,
     fontWeight: tokens.font.weight.medium,
   },
-  sectionHeader: {
-    fontSize: tokens.font.size.sm,
-    fontWeight: tokens.font.weight.semibold,
-    textTransform: 'uppercase',
-    letterSpacing: 0.5,
-    marginTop: tokens.spacing.md,
-    marginBottom: tokens.spacing.xs,
-  },
-  pinnedHeader: {
+  stationHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     flexWrap: 'wrap',
@@ -299,7 +308,7 @@ const styles = StyleSheet.create({
     marginTop: tokens.spacing.md,
     marginBottom: tokens.spacing.xs,
   },
-  pinnedStationName: {
+  stationName: {
     fontSize: tokens.font.size.xl,
     fontWeight: tokens.font.weight.bold,
     marginRight: tokens.spacing.xs,
@@ -308,8 +317,8 @@ const styles = StyleSheet.create({
     width: tokens.size.badgeSm,
     height: tokens.size.badgeSm,
     borderRadius: tokens.size.badgeSm / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   miniRouteText: {
     fontSize: tokens.font.size.xs,
@@ -323,8 +332,8 @@ const styles = StyleSheet.create({
     marginLeft: tokens.size.badgeMd + tokens.spacing.md,
   },
   row: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    flexDirection: "row",
+    alignItems: "center",
     paddingVertical: tokens.spacing.md,
     gap: tokens.spacing.md,
   },
@@ -332,8 +341,8 @@ const styles = StyleSheet.create({
     width: tokens.size.badgeMd,
     height: tokens.size.badgeMd,
     borderRadius: tokens.size.badgeMd / 2,
-    justifyContent: 'center',
-    alignItems: 'center',
+    justifyContent: "center",
+    alignItems: "center",
   },
   routeText: {
     fontSize: tokens.font.size.md,
@@ -347,11 +356,11 @@ const styles = StyleSheet.create({
     fontWeight: tokens.font.weight.semibold,
   },
   etaContainer: {
-    flexDirection: 'row',
-    alignItems: 'baseline',
+    flexDirection: "row",
+    alignItems: "baseline",
     gap: 2,
     minWidth: 50,
-    justifyContent: 'flex-end',
+    justifyContent: "flex-end",
   },
   etaNumber: {
     fontSize: tokens.font.size.title,
@@ -362,16 +371,16 @@ const styles = StyleSheet.create({
     fontWeight: tokens.font.weight.medium,
   },
   loadingRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
     gap: tokens.spacing.sm,
     marginTop: tokens.spacing.lg,
   },
   emptyText: {
     fontSize: tokens.font.size.md,
     fontWeight: tokens.font.weight.medium,
-    textAlign: 'center',
+    textAlign: "center",
     marginTop: tokens.spacing.lg,
   },
 });

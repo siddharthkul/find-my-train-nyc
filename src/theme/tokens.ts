@@ -131,6 +131,8 @@ export function useIsDark(): boolean {
 export const tokens = {
   /** 4-px grid spacing scale */
   spacing: {
+    xxxs: 1,
+    xxs: 2,
     xs: 4,
     sm: 8,
     md: 12,
@@ -188,23 +190,21 @@ export const tokens = {
 // share this base so they look identical.  Each screen spreads these
 // and adds its own specifics (maxHeight, content area, etc.).
 
-/** Gap between the floating sheet and screen edges */
-const SHEET_SIDE = 4;
-const SHEET_BOTTOM = 8;
-
 export const sheetStyles = StyleSheet.create({
-  /** Floating card — generous radius, roomy padding */
+  /** Edge-to-edge card — top corners rounded, flush to bottom like Apple Maps */
   card: {
-    borderRadius: tokens.radius.xl,
+    borderTopLeftRadius: tokens.radius.xl,
+    borderTopRightRadius: tokens.radius.xl,
+    borderBottomLeftRadius: 40,
+    borderBottomRightRadius: 40,
     overflow: 'hidden',
-    paddingTop: tokens.spacing.xl,
+    paddingTop: tokens.spacing.lg,
     paddingHorizontal: tokens.spacing.xl,
-    paddingBottom: tokens.spacing.xl,
-    // Stronger depth cue so glass reads as floating above map tiles.
+    paddingBottom: tokens.spacing.sm,
     shadowColor: '#000000',
-    shadowOpacity: 0.24,
-    shadowRadius: 18,
-    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.18,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: -4 },
     elevation: 10,
   },
   /** Small grab indicator at the top of a sheet */
@@ -221,13 +221,6 @@ export const sheetStyles = StyleSheet.create({
     justifyContent: 'space-between' as const,
     alignItems: 'center' as const,
     marginBottom: tokens.spacing.md,
-  },
-  /** Overlay wrapper that floats the sheet above the bottom edge */
-  overlay: {
-    position: 'absolute' as const,
-    left: SHEET_SIDE,
-    right: SHEET_SIDE,
-    bottom: SHEET_BOTTOM,
   },
   /** "Done" button text */
   doneText: {

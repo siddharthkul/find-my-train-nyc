@@ -1,7 +1,9 @@
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
-import { ErrorBoundary } from './src/components/ErrorBoundary';
+import { ErrorBoundary, installGlobalErrorHandlers } from './src/components/ErrorBoundary';
 import { MapScreen } from './src/screens/MapScreen';
+
+installGlobalErrorHandlers();
 
 export default function App() {
   return (

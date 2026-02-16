@@ -166,6 +166,7 @@ export function MapScreen() {
         },
         500,
       );
+      setSelectedStationId(null);
       void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     } catch {
       // Silently fail – user may have denied permission
@@ -203,8 +204,8 @@ export function MapScreen() {
   useEffect(() => {
     let target: number;
     if (nearbyBarHeight > 0) {
-      // Bar sits at insets.bottom + 6 from the screen edge, so total = bar height + that offset + gap
-      target = nearbyBarHeight + insets.bottom + 6 + tokens.spacing.md;
+      // Bar sits flush at the bottom edge — add breathing room for the island
+      target = nearbyBarHeight + tokens.spacing.xl;
     } else {
       target = insets.bottom + tokens.spacing.xl;
     }
@@ -263,18 +264,25 @@ export function MapScreen() {
     void Haptics.selectionAsync();
   }, []);
 
-  const markerNodes = useMemo(
-    () =>
-      visibleTrains.map((train) => (
+  // Only show train markers when a station is pinned — filter to its routes
+  const activeRoutes = useMemo(() => {
+    if (!activeStation) return null;
+    return new Set(activeStation.routes);
+  }, [activeStation]);
+
+  const markerNodes = useMemo(() => {
+    if (!activeRoutes) return null;
+    return visibleTrains
+      .filter((t) => activeRoutes.has(t.routeId))
+      .map((train) => (
         <TrainMarker
           key={train.id}
           train={train}
           mapHeading={mapHeading}
           hideArrow={isMapMoving && mapHeading !== 0}
         />
-      )),
-    [visibleTrains, mapHeading, isMapMoving],
-  );
+      ));
+  }, [activeRoutes, visibleTrains, mapHeading, isMapMoving]);
 
   const dismissError = useCallback(() => {
     useTrainStore.getState().setError(null);
@@ -300,7 +308,7 @@ export function MapScreen() {
 
       {/* Header info pill */}
       <View style={[styles.topOverlay, { paddingTop: insets.top + tokens.spacing.sm }]}>
-        <GlassCard intensity={65} style={styles.infoCard}>
+        <GlassCard intensity={70} style={[styles.infoCard, { backgroundColor: colors.sheetFill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.sheetStroke }]}>
           <Text style={[styles.subtitle, { color: colors.labelSecondary }]}>
             {visibleTrains.length} nearby · {trains.length} systemwide · {formatLastUpdated(lastUpdatedMs)}
           </Text>
@@ -319,7 +327,7 @@ export function MapScreen() {
       {/* Error card */}
       {errorMessage ? (
         <View style={[styles.bottomOverlay, { paddingBottom: insets.bottom + tokens.spacing.lg }]}>
-          <GlassCard intensity={65} style={styles.errorCard}>
+          <GlassCard intensity={70} style={styles.errorCard}>
             <Text style={[styles.errorTitle, { color: colors.danger }]}>Could not refresh trains</Text>
             <Text style={[styles.errorText, { color: colors.dangerText }]} numberOfLines={3}>
               {errorMessage}
@@ -349,7 +357,7 @@ export function MapScreen() {
 
       {/* Map controls island — floats above whichever bottom panel is visible */}
       <Animated.View style={[styles.mapIsland, { bottom: islandBottom, shadowColor: colors.shadow }]}>
-        <GlassCard intensity={60} style={styles.islandGlass}>
+        <GlassCard intensity={70} style={[styles.islandGlass, { backgroundColor: colors.sheetFill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.sheetStroke }]}>
           <Pressable
             onPress={cycleMapType}
             style={({ pressed }) => [
@@ -385,8 +393,8 @@ const styles = StyleSheet.create({
   topOverlay: {
     position: 'absolute',
     top: 0,
-    left: 0,
-    right: 0,
+    left: 16,
+    right: 16,
     alignItems: 'center',
   },
   infoCard: {
@@ -394,7 +402,6 @@ const styles = StyleSheet.create({
     paddingVertical: tokens.spacing.md,
     borderRadius: tokens.radius.xl,
     overflow: 'hidden',
-    marginHorizontal: 4,
   },
   subtitle: {
     fontSize: tokens.font.size.sm,
