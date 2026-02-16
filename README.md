@@ -11,7 +11,7 @@ A real-time NYC subway tracker built with React Native and Expo, inspired by App
 - Real-time subway train positions from MTA GTFS-Realtime feeds
 - Pill-shaped train markers with subway icon + route badge showing direction of travel
 - Subway line overlays drawn on the map
-- Automatic mock train mode when no API key is set
+- Automatic mock train fallback when offline
 
 **Station Arrivals**
 - Tap any station to see upcoming arrivals in a unified bottom sheet
@@ -68,15 +68,11 @@ npm run ios
 npm start
 ```
 
-### MTA API Key (Optional)
+### MTA Data
 
-For live train data, get a free API key from the [MTA Developer Portal](https://api.mta.info/):
+MTA subway feeds are **publicly available** — no API key required. The app fetches live data directly from MTA's open GTFS-Realtime endpoints out of the box.
 
-```bash
-export EXPO_PUBLIC_MTA_API_KEY="YOUR_MTA_KEY"
-```
-
-Without a key, the app uses realistic mock train data so you can still explore the full UI.
+If all live feeds fail (e.g., no network), the app automatically falls back to realistic mock train data so you can still explore the full UI.
 
 ## Architecture
 
@@ -119,9 +115,9 @@ src/
 
 | Data | Source | Key Required |
 |------|--------|:---:|
-| Live train positions | [MTA GTFS-Realtime](https://api.mta.info/) | Yes (free) |
-| Station arrivals | MTA GTFS-Realtime TripUpdate feeds | Yes (free) |
-| Service alerts | MTA GTFS-Realtime Alert feeds | Yes (free) |
+| Live train positions | [MTA GTFS-Realtime](https://api.mta.info/) | No |
+| Station arrivals | MTA GTFS-Realtime TripUpdate feeds | No |
+| Service alerts | MTA GTFS-Realtime Alert feeds | No |
 | Subway entrances | [MTA Open Data (SODA API)](https://data.ny.gov/Transportation/MTA-Subway-Entrances-and-Exits-2024/i9wp-a4ja) | No |
 | Walking directions | [Valhalla (OpenStreetMap)](https://valhalla1.openstreetmap.de/) | No |
 | Station & line geometry | Static data bundled in app | No |
