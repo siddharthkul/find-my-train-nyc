@@ -236,9 +236,26 @@ export function MapScreen() {
   const handleStationPress = useCallback(
     (stationId: string) => {
       setSelectedStationId((prev) => (prev === stationId ? null : stationId));
+      // Center the map on the tapped station
+      const station = subwayStations.find((s) => s.id === stationId);
+      if (station) {
+        const latDelta = Math.min(currentRegion.latitudeDelta, 0.02);
+        // Shift center south so the station appears in the upper third,
+        // above the bottom sheet that covers roughly the lower 40%.
+        const offsetLat = station.lat - latDelta * 0.3;
+        mapRef.current?.animateToRegion(
+          {
+            latitude: offsetLat,
+            longitude: station.lng,
+            latitudeDelta: latDelta,
+            longitudeDelta: Math.min(currentRegion.longitudeDelta, 0.02),
+          },
+          350,
+        );
+      }
       void Haptics.selectionAsync();
     },
-    [],
+    [currentRegion],
   );
 
   const dismissPinnedStation = useCallback(() => {

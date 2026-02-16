@@ -10,7 +10,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getRouteColor } from '../data/mta/routeColors';
+import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
 import type { SubwayStation } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
 import { type AppColors, sheetStyles, tokens, useColors } from '../theme/tokens';
@@ -154,26 +154,22 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
         {stationName ? (
           isPinned ? (
             <View style={styles.pinnedHeader}>
-              <View style={styles.pinnedHeaderLeft}>
-                <Text
-                  style={[styles.pinnedStationName, { color: colors.labelPrimary }]}
-                  numberOfLines={1}
-                >
-                  {stationName}
-                </Text>
-                {station?.routes ? (
-                  <View style={styles.pinnedRoutes}>
-                    {station.routes.map((route) => (
-                      <View
-                        key={route}
-                        style={[styles.miniRouteBadge, { backgroundColor: getRouteColor(route) }]}
-                      >
-                        <Text style={[styles.miniRouteText, { color: colors.badgeText }]}>{route}</Text>
-                      </View>
-                    ))}
+              <Text
+                style={[styles.pinnedStationName, { color: colors.labelPrimary }]}
+                numberOfLines={1}
+              >
+                {stationName}
+              </Text>
+              {station?.routes ? (
+                station.routes.map((route) => (
+                  <View
+                    key={route}
+                    style={[styles.miniRouteBadge, { backgroundColor: getRouteColor(route) }]}
+                  >
+                    <Text style={[styles.miniRouteText, { color: getRouteTextColor(route) }]}>{route}</Text>
                   </View>
-                ) : null}
-              </View>
+                ))
+              ) : null}
             </View>
           ) : (
             <Text style={[styles.sectionHeader, { color: colors.labelSecondary }]} numberOfLines={1}>
@@ -236,7 +232,7 @@ const ArrivalItem = memo(function ArrivalItem({
     <View style={styles.row}>
       {/* Route badge */}
       <View style={[styles.routeBadge, { backgroundColor: routeColor }]}>
-        <Text style={[styles.routeText, { color: colors.badgeText }]}>{item.routeId}</Text>
+        <Text style={[styles.routeText, { color: getRouteTextColor(item.routeId) }]}>{item.routeId}</Text>
       </View>
 
       {/* Direction */}
@@ -298,22 +294,15 @@ const styles = StyleSheet.create({
   pinnedHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
+    gap: tokens.spacing.xs,
     marginTop: tokens.spacing.md,
     marginBottom: tokens.spacing.xs,
-  },
-  pinnedHeaderLeft: {
-    flex: 1,
-    marginRight: tokens.spacing.sm,
   },
   pinnedStationName: {
     fontSize: tokens.font.size.xl,
     fontWeight: tokens.font.weight.bold,
-  },
-  pinnedRoutes: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: tokens.spacing.xs,
-    marginTop: tokens.spacing.xs,
+    marginRight: tokens.spacing.xs,
   },
   miniRouteBadge: {
     width: tokens.size.badgeSm,

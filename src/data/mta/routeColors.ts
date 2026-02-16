@@ -56,6 +56,20 @@ export function getRouteColor(routeId: string): string {
   return ROUTE_COLOR_MAP[routeId?.toUpperCase()] ?? '#2C2C2E';
 }
 
+/**
+ * Returns black or white text depending on the route badge brightness.
+ * Uses relative luminance to pick the most readable contrast.
+ */
+export function getRouteTextColor(routeId: string): string {
+  const hex = getRouteColor(routeId);
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  // Perceived brightness (ITU-R BT.601)
+  const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  return luminance > 0.6 ? '#000000' : '#FFFFFF';
+}
+
 export function getRouteLineName(routeId: string): string {
   return ROUTE_LINE_NAME[routeId?.toUpperCase()] ?? routeId;
 }

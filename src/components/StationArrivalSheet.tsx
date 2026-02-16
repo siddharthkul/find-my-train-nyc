@@ -11,7 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { getRouteColor } from '../data/mta/routeColors';
+import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
 import { useArrivalStore } from '../data/mta/stores/arrivalStore';
 import type { SubwayStation } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
@@ -159,7 +159,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
                     { backgroundColor: getRouteColor(route) },
                   ]}
                 >
-                  <Text style={[styles.smallBadgeText, { color: colors.badgeText }]}>{route}</Text>
+                  <Text style={[styles.smallBadgeText, { color: getRouteTextColor(route) }]}>{route}</Text>
                 </View>
               ))}
               {station.ada && (
@@ -266,7 +266,7 @@ const ArrivalRow = memo(function ArrivalRow({
   return (
     <View style={styles.arrivalRow}>
       <View style={[styles.arrivalBadge, { backgroundColor: routeColor }]}>
-        <Text style={[styles.arrivalBadgeText, { color: colors.badgeText }]}>{arrival.routeId}</Text>
+        <Text style={[styles.arrivalBadgeText, { color: getRouteTextColor(arrival.routeId) }]}>{arrival.routeId}</Text>
       </View>
       <Text
         style={[
