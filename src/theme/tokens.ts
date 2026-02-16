@@ -177,9 +177,9 @@ export const tokens = {
 
   motion: {
     spring: {
-      damping: 18,
-      stiffness: 180,
-      mass: 0.9,
+      damping: 22,
+      stiffness: 220,
+      mass: 0.8,
     },
   },
 };

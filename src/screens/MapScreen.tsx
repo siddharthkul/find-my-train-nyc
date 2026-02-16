@@ -12,7 +12,9 @@ import {
 } from 'react-native';
 import MapView, { MapType, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { CompassButton } from '../components/CompassButton';
 import { GlassCard } from '../components/GlassCard';
+import { MapLayerPicker } from '../components/MapLayerPicker';
 import { NearbyTrainsBar } from '../components/NearbyTrainsBar';
 import { StationMarkers } from '../components/StationMarkers';
 import { SubwayLines } from '../components/SubwayLines';
@@ -67,10 +69,12 @@ export function MapScreen() {
   const [mapType, setMapType] = useState<MapType>('standard');
   const [mapHeading, setMapHeading] = useState(0);
   const [isMapMoving, setIsMapMoving] = useState(false);
+  const [is3D, setIs3D] = useState(false);
   const [nearbyBarHeight, setNearbyBarHeight] = useState(0);
 
-  // Animated value for the map controls island position
-  const islandBottom = useRef(new Animated.Value(insets.bottom + tokens.spacing.xl)).current;
+  // Animated translateY for the island — native driver for 60fps
+  const islandTranslateY = useRef(new Animated.Value(0)).current;
+  const islandBaseBottom = useRef(insets.bottom + tokens.spacing.md);
 
   // Find the nearest station to the map center (for the nearby bar ETAs)
   const nearestStation = useMemo(() => {
@@ -110,14 +114,7 @@ export function MapScreen() {
   const activeStationId = activeStation?.id ?? null;
   const isPinnedStation = !!selectedStationId;
 
-  const cycleMapType = useCallback(() => {
-    setMapType((prev) => {
-      if (prev === 'standard') return 'hybrid';
-      if (prev === 'hybrid') return 'satellite';
-      return 'standard';
-    });
-    void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
-  }, []);
+  const [showLayerPicker, setShowLayerPicker] = useState(false);
 
   // Request foreground location permission on mount and center on user
   useEffect(() => {
@@ -200,21 +197,23 @@ export function MapScreen() {
     }, 150);
   }, []);
 
-  // Animate the map controls island above the bottom bar
+  // Animate the map controls island above the bottom bar (native driver, 60fps)
   useEffect(() => {
+    const base = islandBaseBottom.current;
     let target: number;
     if (nearbyBarHeight > 0) {
-      // Bar sits flush at the bottom edge — add breathing room for the island
-      target = nearbyBarHeight + tokens.spacing.xl;
+      // 16 = NearbyTrainsBar container bottom offset
+      target = 16 + nearbyBarHeight + tokens.spacing.md;
     } else {
-      target = insets.bottom + tokens.spacing.xl;
+      target = insets.bottom + tokens.spacing.md;
     }
-    Animated.spring(islandBottom, {
-      toValue: target,
+    // translateY is negative to move up from the base position
+    Animated.spring(islandTranslateY, {
+      toValue: -(target - base),
       ...tokens.motion.spring,
-      useNativeDriver: false, // `bottom` doesn't support native driver
+      useNativeDriver: true,
     }).start();
-  }, [nearbyBarHeight, insets.bottom, islandBottom]);
+  }, [nearbyBarHeight, insets.bottom, islandTranslateY]);
 
   // Filter trains to only those within the current viewport
   const visibleTrains = useMemo(() => {
@@ -298,7 +297,13 @@ export function MapScreen() {
         mapType={mapType}
         showsUserLocation={!!locationPermission}
         showsMyLocationButton={false}
-        onRegionChange={() => setIsMapMoving(true)}
+        onRegionChange={() => {
+          setIsMapMoving(true);
+          // Live-sync heading for smooth compass rotation
+          mapRef.current?.getCamera().then((cam) => {
+            setMapHeading(Math.round(cam.heading));
+          });
+        }}
         onRegionChangeComplete={handleRegionChange}
       >
         <SubwayLines region={currentRegion} />
@@ -342,42 +347,90 @@ export function MapScreen() {
         </View>
       ) : null}
 
-      {/* Nearby trains bar — always visible */}
-      <NearbyTrainsBar
-        arrivals={nearbyArrivals}
-        station={activeStation}
-        isPinned={isPinnedStation}
-        onDismissStation={dismissPinnedStation}
-        onSearchPress={() => {
-          // TODO: open full-screen search
-          void Haptics.selectionAsync();
-        }}
-        onHeightChange={setNearbyBarHeight}
-      />
+      {/* Bottom sheet — swaps between arrivals and layer picker */}
+      {showLayerPicker ? (
+        <MapLayerPicker
+          currentMapType={mapType}
+          onSelect={(type) => {
+            setMapType(type);
+          }}
+          onClose={() => setShowLayerPicker(false)}
+          onHeightChange={setNearbyBarHeight}
+        />
+      ) : (
+        <NearbyTrainsBar
+          arrivals={nearbyArrivals}
+          station={activeStation}
+          isPinned={isPinnedStation}
+          onDismissStation={dismissPinnedStation}
+          onSearchPress={() => {
+            // TODO: open full-screen search
+            void Haptics.selectionAsync();
+          }}
+          onHeightChange={setNearbyBarHeight}
+        />
+      )}
 
-      {/* Map controls island — floats above whichever bottom panel is visible */}
-      <Animated.View style={[styles.mapIsland, { bottom: islandBottom, shadowColor: colors.shadow }]}>
+      {/* Compass — always visible */}
+      <Animated.View style={[styles.compassContainer, { bottom: islandBaseBottom.current, transform: [{ translateY: islandTranslateY }] }]}>
+        <CompassButton
+          heading={mapHeading}
+          onResetNorth={() => {
+            mapRef.current?.animateCamera({ heading: 0 }, { duration: 300 });
+          }}
+        />
+      </Animated.View>
+
+      {/* Map controls island */}
+      <Animated.View style={[styles.mapIsland, { bottom: islandBaseBottom.current, transform: [{ translateY: islandTranslateY }], shadowColor: colors.shadow }]}>
         <GlassCard intensity={70} style={[styles.islandGlass, { backgroundColor: colors.sheetFill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.sheetStroke }]}>
           <Pressable
-            onPress={cycleMapType}
+            onPress={() => {
+              setIs3D((prev) => {
+                const next = !prev;
+                mapRef.current?.animateCamera(
+                  { pitch: next ? 45 : 0 },
+                  { duration: 300 },
+                );
+                return next;
+              });
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
             style={({ pressed }) => [
               styles.islandBtn,
               pressed && { backgroundColor: colors.mapBtnPressed },
             ]}
           >
-          <Ionicons name="map-outline" size={21} color={colors.labelPrimary} />
-        </Pressable>
+            <Text style={[styles.threeDText, { color: colors.labelPrimary }]}>
+              {is3D ? '2D' : '3D'}
+            </Text>
+          </Pressable>
 
-        <View style={[styles.islandDivider, { backgroundColor: colors.borderSubtle }]} />
+          <View style={[styles.islandDivider, { backgroundColor: colors.borderSubtle }]} />
 
-        <Pressable
-          onPress={centerOnUser}
-          style={({ pressed }) => [
-            styles.islandBtn,
-            pressed && { backgroundColor: colors.mapBtnPressed },
-          ]}
-        >
-          <Ionicons name="navigate" size={19} color={colors.labelPrimary} />
+          <Pressable
+            onPress={() => {
+              setShowLayerPicker(true);
+              void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            }}
+            style={({ pressed }) => [
+              styles.islandBtn,
+              pressed && { backgroundColor: colors.mapBtnPressed },
+            ]}
+          >
+            <Ionicons name="map-outline" size={21} color={colors.labelPrimary} />
+          </Pressable>
+
+          <View style={[styles.islandDivider, { backgroundColor: colors.borderSubtle }]} />
+
+          <Pressable
+            onPress={centerOnUser}
+            style={({ pressed }) => [
+              styles.islandBtn,
+              pressed && { backgroundColor: colors.mapBtnPressed },
+            ]}
+          >
+            <Ionicons name="navigate" size={19} color={colors.labelPrimary} />
           </Pressable>
         </GlassCard>
       </Animated.View>
@@ -458,6 +511,12 @@ const styles = StyleSheet.create({
     fontSize: tokens.font.size.xs,
     fontWeight: tokens.font.weight.semibold,
   },
+  compassContainer: {
+    position: 'absolute',
+    right: tokens.spacing.lg,
+    zIndex: 10,
+    marginBottom: tokens.size.islandBtn * 3 + tokens.spacing.md,
+  },
   mapIsland: {
     position: 'absolute',
     right: tokens.spacing.lg,
@@ -478,6 +537,10 @@ const styles = StyleSheet.create({
     height: tokens.size.islandBtn,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  threeDText: {
+    fontSize: tokens.font.size.md,
+    fontWeight: tokens.font.weight.bold,
   },
   islandDivider: {
     height: StyleSheet.hairlineWidth,

@@ -1,8 +1,9 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
-import { memo, useCallback, useEffect, useMemo, useState } from 'react';
+import { memo, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
+  Animated,
   FlatList,
   Pressable,
   StyleSheet,
@@ -85,6 +86,16 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
     [onHeightChange],
   );
 
+  // Slide-in animation on mount
+  const slideAnim = useRef(new Animated.Value(300)).current;
+  useEffect(() => {
+    Animated.spring(slideAnim, {
+      toValue: 0,
+      ...tokens.motion.spring,
+      useNativeDriver: true,
+    }).start();
+  }, [slideAnim]);
+
   // Tick to refresh countdowns every 15s
   const [tick, setTick] = useState(0);
   useEffect(() => {
@@ -124,7 +135,7 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
   const hasLoadedOnce = arrivals.length > 0 || rows.length > 0;
 
   return (
-    <View style={styles.container} onLayout={handleLayout}>
+    <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]} onLayout={handleLayout}>
       <GlassCard
         intensity={70}
         style={[
@@ -228,7 +239,7 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
           </View>
         )}
       </GlassCard>
-    </View>
+    </Animated.View>
   );
 });
 
