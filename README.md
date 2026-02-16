@@ -53,8 +53,8 @@ A real-time NYC subway tracker built with React Native and Expo, inspired by App
 ### Installation
 
 ```bash
-git clone https://github.com/YOUR_USERNAME/FindMyTrainNYC.git
-cd FindMyTrainNYC
+git clone https://github.com/siddharthkul/find-my-train-nyc.git
+cd find-my-train-nyc
 npm install
 ```
 
