@@ -1,9 +1,5 @@
 import { BlurView, type BlurTint } from 'expo-blur';
-import {
-  GlassView,
-  type GlassStyle,
-  isLiquidGlassAvailable,
-} from 'expo-glass-effect';
+import { GlassView, type GlassStyle, isLiquidGlassAvailable } from 'expo-glass-effect';
 import type { PropsWithChildren } from 'react';
 import { type StyleProp, type ViewStyle } from 'react-native';
 import { useColors } from '../theme/tokens';
@@ -44,22 +40,14 @@ export function GlassCard({
 
   if (LIQUID_GLASS) {
     return (
-      <GlassView
-        style={style}
-        tintColor={glassTint}
-        glassEffectStyle={glassStyle}
-      >
+      <GlassView style={style} tintColor={glassTint} glassEffectStyle={glassStyle}>
         {children}
       </GlassView>
     );
   }
 
   return (
-    <BlurView
-      intensity={intensity}
-      tint={resolvedTint}
-      style={style}
-    >
+    <BlurView intensity={intensity} tint={resolvedTint} style={style}>
       {children}
     </BlurView>
   );

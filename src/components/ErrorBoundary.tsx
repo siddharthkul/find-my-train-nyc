@@ -22,6 +22,7 @@ export function installGlobalErrorHandlers() {
   });
 
   // Catch unhandled promise rejections
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
   const tracking = require('promise/setimmediate/rejection-tracking');
   tracking.enable({
     allRejections: true,

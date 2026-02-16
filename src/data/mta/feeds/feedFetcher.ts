@@ -57,16 +57,12 @@ async function fetchAndDecode(
   });
 
   if (!response.ok) {
-    throw new Error(
-      `MTA feed ${feedId} failed with status ${response.status}`,
-    );
+    throw new Error(`MTA feed ${feedId} failed with status ${response.status}`);
   }
 
   const arrayBuffer = await response.arrayBuffer();
   const byteBuffer = Buffer.from(arrayBuffer);
-  return transit_realtime.FeedMessage.decode(
-    byteBuffer,
-  ) as transit_realtime.FeedMessage;
+  return transit_realtime.FeedMessage.decode(byteBuffer) as transit_realtime.FeedMessage;
 }
 
 async function fetchWithRetry(
@@ -87,9 +83,7 @@ async function fetchWithRetry(
 
       // Wait before retrying
       if (attempt < retries) {
-        await new Promise((resolve) =>
-          setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1)),
-        );
+        await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY_MS * (attempt + 1)));
       }
     }
   }
@@ -171,10 +165,7 @@ export async function fetchFeeds(
       // so we match by index.
       const idx = settled.indexOf(result);
       const feedId = feedIds[idx];
-      const err =
-        result.reason instanceof Error
-          ? result.reason
-          : new Error(String(result.reason));
+      const err = result.reason instanceof Error ? result.reason : new Error(String(result.reason));
       if (feedId) errors.set(feedId, err);
     }
   }

@@ -11,11 +11,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import {
-  type WalkingRoute,
-  formatDistance,
-  formatWalkTime,
-} from '../data/directions/walkingRoute';
+import { type WalkingRoute, formatDistance, formatWalkTime } from '../data/directions/walkingRoute';
 import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
 import type { SubwayStation } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
@@ -65,11 +61,16 @@ function dirFromArrival(a: ArrivalPrediction): string {
 
 function dirLabel(dir: string): string {
   switch (dir) {
-    case 'N': return 'Uptown';
-    case 'S': return 'Downtown';
-    case 'E': return 'Eastbound';
-    case 'W': return 'Westbound';
-    default: return '';
+    case 'N':
+      return 'Uptown';
+    case 'S':
+      return 'Downtown';
+    case 'E':
+      return 'Eastbound';
+    case 'W':
+      return 'Westbound';
+    default:
+      return '';
   }
 }
 
@@ -83,8 +84,8 @@ function formatEta(min: number): string {
 export const NearbyTrainsBar = memo(function NearbyTrainsBar({
   arrivals,
   station,
-  isPinned = false,
-  onDismissStation,
+  isPinned: _isPinned = false,
+  onDismissStation: _onDismissStation,
   onSearchPress,
   onHeightChange,
   walkingRoute = null,
@@ -160,7 +161,10 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
   const hasLoadedOnce = arrivals.length > 0 || rows.length > 0;
 
   return (
-    <Animated.View style={[styles.container, { transform: [{ translateY: slideAnim }] }]} onLayout={handleLayout}>
+    <Animated.View
+      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
+      onLayout={handleLayout}
+    >
       <GlassCard
         intensity={70}
         style={[
@@ -181,9 +185,7 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
           }}
         >
           <Ionicons name="search" size={18} color={colors.labelSecondary} />
-          <Text
-            style={[styles.searchPlaceholder, { color: colors.labelSecondary }]}
-          >
+          <Text style={[styles.searchPlaceholder, { color: colors.labelSecondary }]}>
             Where to?
           </Text>
         </Pressable>
@@ -191,27 +193,16 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
         {/* Station header — always shows name + route badges */}
         {stationName ? (
           <View style={styles.stationHeader}>
-            <Text
-              style={[styles.stationName, { color: colors.labelPrimary }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.stationName, { color: colors.labelPrimary }]} numberOfLines={1}>
               {stationName}
             </Text>
             {station?.routes
               ? station.routes.map((route) => (
                   <View
                     key={route}
-                    style={[
-                      styles.miniRouteBadge,
-                      { backgroundColor: getRouteColor(route) },
-                    ]}
+                    style={[styles.miniRouteBadge, { backgroundColor: getRouteColor(route) }]}
                   >
-                    <Text
-                      style={[
-                        styles.miniRouteText,
-                        { color: getRouteTextColor(route) },
-                      ]}
-                    >
+                    <Text style={[styles.miniRouteText, { color: getRouteTextColor(route) }]}>
                       {route}
                     </Text>
                   </View>
@@ -233,10 +224,7 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
               </Text>
             </View>
             <Pressable
-              style={({ pressed }) => [
-                styles.endBtn,
-                pressed && { opacity: 0.8 },
-              ]}
+              style={({ pressed }) => [styles.endBtn, pressed && { opacity: 0.8 }]}
               onPress={onEndDirections}
             >
               <Text style={styles.endBtnText}>End</Text>
@@ -278,32 +266,21 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
             contentContainerStyle={{
               paddingBottom: insets.bottom,
             }}
-            renderItem={({ item }) => (
-              <ArrivalItem item={item} colors={colors} />
-            )}
+            renderItem={({ item }) => <ArrivalItem item={item} colors={colors} />}
             ItemSeparatorComponent={() => (
-              <View
-                style={[
-                  styles.separator,
-                  { backgroundColor: colors.borderSubtle },
-                ]}
-              />
+              <View style={[styles.separator, { backgroundColor: colors.borderSubtle }]} />
             )}
           />
         ) : (
           <View style={{ paddingBottom: insets.bottom + tokens.spacing.sm }}>
             {hasLoadedOnce ? (
-              <Text
-                style={[styles.emptyText, { color: colors.labelSecondary }]}
-              >
+              <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
                 No trains arriving soon
               </Text>
             ) : (
               <View style={styles.loadingRow}>
                 <ActivityIndicator size="small" color={colors.labelSecondary} />
-                <Text
-                  style={[styles.emptyText, { color: colors.labelSecondary }]}
-                >
+                <Text style={[styles.emptyText, { color: colors.labelSecondary }]}>
                   Loading arrivals…
                 </Text>
               </View>
@@ -332,7 +309,9 @@ const ArrivalItem = memo(function ArrivalItem({
     <View style={styles.row}>
       {/* Route badge */}
       <View style={[styles.routeBadge, { backgroundColor: routeColor }]}>
-        <Text style={[styles.routeText, { color: getRouteTextColor(item.routeId) }]}>{item.routeId}</Text>
+        <Text style={[styles.routeText, { color: getRouteTextColor(item.routeId) }]}>
+          {item.routeId}
+        </Text>
       </View>
 
       {/* Direction */}
@@ -344,19 +323,10 @@ const ArrivalItem = memo(function ArrivalItem({
 
       {/* ETA */}
       <View style={styles.etaContainer}>
-        <Text
-          style={[
-            styles.etaNumber,
-            { color: isNow ? colors.accent : colors.labelPrimary },
-          ]}
-        >
+        <Text style={[styles.etaNumber, { color: isNow ? colors.accent : colors.labelPrimary }]}>
           {eta}
         </Text>
-        {!isNow && (
-          <Text style={[styles.etaUnit, { color: colors.labelSecondary }]}>
-            min
-          </Text>
-        )}
+        {!isNow && <Text style={[styles.etaUnit, { color: colors.labelSecondary }]}>min</Text>}
       </View>
     </View>
   );
@@ -366,14 +336,14 @@ const ArrivalItem = memo(function ArrivalItem({
 
 const styles = StyleSheet.create({
   container: {
-    position: "absolute",
+    position: 'absolute',
     left: 16,
     right: 16,
     bottom: 16,
   },
   searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     height: 48,
     borderRadius: tokens.radius.lg,
     paddingHorizontal: tokens.spacing.lg,
@@ -400,8 +370,8 @@ const styles = StyleSheet.create({
     width: tokens.size.badgeSm,
     height: tokens.size.badgeSm,
     borderRadius: tokens.size.badgeSm / 2,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   miniRouteText: {
     fontSize: tokens.font.size.xs,
@@ -463,8 +433,8 @@ const styles = StyleSheet.create({
     marginLeft: tokens.size.badgeMd + tokens.spacing.md,
   },
   row: {
-    flexDirection: "row",
-    alignItems: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: tokens.spacing.md,
     gap: tokens.spacing.md,
   },
@@ -472,8 +442,8 @@ const styles = StyleSheet.create({
     width: tokens.size.badgeMd,
     height: tokens.size.badgeMd,
     borderRadius: tokens.size.badgeMd / 2,
-    justifyContent: "center",
-    alignItems: "center",
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   routeText: {
     fontSize: tokens.font.size.md,
@@ -487,11 +457,11 @@ const styles = StyleSheet.create({
     fontWeight: tokens.font.weight.semibold,
   },
   etaContainer: {
-    flexDirection: "row",
-    alignItems: "baseline",
+    flexDirection: 'row',
+    alignItems: 'baseline',
     gap: 2,
     minWidth: 50,
-    justifyContent: "flex-end",
+    justifyContent: 'flex-end',
   },
   etaNumber: {
     fontSize: tokens.font.size.title,
@@ -502,16 +472,16 @@ const styles = StyleSheet.create({
     fontWeight: tokens.font.weight.medium,
   },
   loadingRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: tokens.spacing.sm,
     marginTop: tokens.spacing.lg,
   },
   emptyText: {
     fontSize: tokens.font.size.md,
     fontWeight: tokens.font.weight.medium,
-    textAlign: "center",
+    textAlign: 'center',
     marginTop: tokens.spacing.lg,
   },
 });

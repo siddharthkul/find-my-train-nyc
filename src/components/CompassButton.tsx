@@ -34,10 +34,7 @@ export const CompassButton = memo(function CompassButton({ heading, onResetNorth
           onResetNorth();
           void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
         }}
-        style={({ pressed }) => [
-          styles.btn,
-          pressed && { opacity: 0.7 },
-        ]}
+        style={({ pressed }) => [styles.btn, pressed && { opacity: 0.7 }]}
       >
         {/* Rotating dial */}
         <View style={[styles.dial, { transform: [{ rotate: `${-heading}deg` }] }]}>
@@ -47,10 +44,7 @@ export const CompassButton = memo(function CompassButton({ heading, onResetNorth
             return (
               <View
                 key={angle}
-                style={[
-                  styles.tickContainer,
-                  { transform: [{ rotate: `${angle}deg` }] },
-                ]}
+                style={[styles.tickContainer, { transform: [{ rotate: `${angle}deg` }] }]}
               >
                 <View
                   style={[

@@ -37,9 +37,7 @@ export function useStationArrivals(stationId: string | null) {
       setArrivals(id, arrivals);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : 'Could not load arrival predictions.';
+        error instanceof Error ? error.message : 'Could not load arrival predictions.';
       setError(message);
     } finally {
       setLoading(false);

@@ -21,10 +21,7 @@ import { NearbyTrainsBar } from '../components/NearbyTrainsBar';
 import { StationMarkers } from '../components/StationMarkers';
 import { SubwayLines } from '../components/SubwayLines';
 import { TrainMarker } from '../components/TrainMarker';
-import {
-  type WalkingRoute,
-  fetchWalkingRoute,
-} from '../data/directions/walkingRoute';
+import { type WalkingRoute, fetchWalkingRoute } from '../data/directions/walkingRoute';
 import { useStationArrivals } from '../data/mta/hooks/useStationArrivals';
 import { useSubwayEntrances } from '../data/mta/hooks/useSubwayEntrances';
 import { useArrivalStore } from '../data/mta/stores/arrivalStore';
@@ -85,7 +82,7 @@ export function MapScreen() {
 
   // Find the nearest station to the map center (for the nearby bar ETAs)
   const nearestStation = useMemo(() => {
-    let best: typeof subwayStations[0] | null = null;
+    let best: (typeof subwayStations)[0] | null = null;
     let bestDist = Infinity;
     const cLat = currentRegion.latitude;
     const cLng = currentRegion.longitude;
@@ -114,7 +111,7 @@ export function MapScreen() {
   const activeStation = useMemo(
     () =>
       selectedStationId
-        ? subwayStations.find((s) => s.id === selectedStationId) ?? nearestStation
+        ? (subwayStations.find((s) => s.id === selectedStationId) ?? nearestStation)
         : nearestStation,
     [selectedStationId, nearestStation],
   );
@@ -159,8 +156,7 @@ export function MapScreen() {
         let nearestDist = Infinity;
         let nearest = candidates[0];
         for (const ent of candidates) {
-          const d =
-            (ent.lat - from.latitude) ** 2 + (ent.lng - from.longitude) ** 2;
+          const d = (ent.lat - from.latitude) ** 2 + (ent.lng - from.longitude) ** 2;
           if (d < nearestDist) {
             nearestDist = d;
             nearest = ent;
@@ -399,7 +395,11 @@ export function MapScreen() {
         onRegionChangeComplete={handleRegionChange}
       >
         <SubwayLines region={currentRegion} />
-        <StationMarkers region={currentRegion} onStationPress={handleStationPress} activeStationId={activeStationId} />
+        <StationMarkers
+          region={currentRegion}
+          onStationPress={handleStationPress}
+          activeStationId={activeStationId}
+        />
         <EntranceMarkers entrances={stationEntrances} region={currentRegion} />
         {markerNodes}
         {walkingRoute && (
@@ -416,11 +416,26 @@ export function MapScreen() {
 
       {/* Header info pill */}
       <View style={[styles.topOverlay, { paddingTop: insets.top + tokens.spacing.sm }]}>
-        <GlassCard intensity={70} style={[styles.infoCard, { backgroundColor: colors.sheetFill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.sheetStroke }]}>
+        <GlassCard
+          intensity={70}
+          style={[
+            styles.infoCard,
+            {
+              backgroundColor: colors.sheetFill,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: colors.sheetStroke,
+            },
+          ]}
+        >
           <Text style={[styles.subtitle, { color: colors.labelSecondary }]}>
-            {visibleTrains.length} nearby · {trains.length} systemwide · {formatLastUpdated(lastUpdatedMs)}
+            {visibleTrains.length} nearby · {trains.length} systemwide ·{' '}
+            {formatLastUpdated(lastUpdatedMs)}
           </Text>
-          {mode === 'mock' ? <Text style={[styles.mockNotice, { color: colors.mockNotice }]}>Mock mode (no API key)</Text> : null}
+          {mode === 'mock' ? (
+            <Text style={[styles.mockNotice, { color: colors.mockNotice }]}>
+              Mock mode (no API key)
+            </Text>
+          ) : null}
         </GlassCard>
       </View>
 
@@ -428,7 +443,9 @@ export function MapScreen() {
       {isLoading && trains.length === 0 ? (
         <View style={styles.centerState}>
           <ActivityIndicator size="small" color={colors.labelSecondary} />
-          <Text style={[styles.stateText, { color: colors.labelSecondary }]}>Loading NYC subway trains…</Text>
+          <Text style={[styles.stateText, { color: colors.labelSecondary }]}>
+            Loading NYC subway trains…
+          </Text>
         </View>
       ) : null}
 
@@ -436,12 +453,17 @@ export function MapScreen() {
       {errorMessage ? (
         <View style={[styles.bottomOverlay, { paddingBottom: insets.bottom + tokens.spacing.lg }]}>
           <GlassCard intensity={70} style={styles.errorCard}>
-            <Text style={[styles.errorTitle, { color: colors.danger }]}>Could not refresh trains</Text>
+            <Text style={[styles.errorTitle, { color: colors.danger }]}>
+              Could not refresh trains
+            </Text>
             <Text style={[styles.errorText, { color: colors.dangerText }]} numberOfLines={3}>
               {errorMessage}
             </Text>
             <Pressable
-              style={[styles.dismissButton, { backgroundColor: colors.dismissBg, borderColor: colors.borderSubtle }]}
+              style={[
+                styles.dismissButton,
+                { backgroundColor: colors.dismissBg, borderColor: colors.borderSubtle },
+              ]}
               onPress={dismissError}
             >
               <Text style={[styles.dismissLabel, { color: colors.labelSecondary }]}>Dismiss</Text>
@@ -479,7 +501,12 @@ export function MapScreen() {
       )}
 
       {/* Compass — always visible */}
-      <Animated.View style={[styles.compassContainer, { bottom: islandBaseBottom.current, transform: [{ translateY: islandTranslateY }] }]}>
+      <Animated.View
+        style={[
+          styles.compassContainer,
+          { bottom: islandBaseBottom.current, transform: [{ translateY: islandTranslateY }] },
+        ]}
+      >
         <CompassButton
           heading={mapHeading}
           onResetNorth={() => {
@@ -489,16 +516,32 @@ export function MapScreen() {
       </Animated.View>
 
       {/* Map controls island */}
-      <Animated.View style={[styles.mapIsland, { bottom: islandBaseBottom.current, transform: [{ translateY: islandTranslateY }], shadowColor: colors.shadow }]}>
-        <GlassCard intensity={70} style={[styles.islandGlass, { backgroundColor: colors.sheetFill, borderWidth: StyleSheet.hairlineWidth, borderColor: colors.sheetStroke }]}>
+      <Animated.View
+        style={[
+          styles.mapIsland,
+          {
+            bottom: islandBaseBottom.current,
+            transform: [{ translateY: islandTranslateY }],
+            shadowColor: colors.shadow,
+          },
+        ]}
+      >
+        <GlassCard
+          intensity={70}
+          style={[
+            styles.islandGlass,
+            {
+              backgroundColor: colors.sheetFill,
+              borderWidth: StyleSheet.hairlineWidth,
+              borderColor: colors.sheetStroke,
+            },
+          ]}
+        >
           <Pressable
             onPress={() => {
               setIs3D((prev) => {
                 const next = !prev;
-                mapRef.current?.animateCamera(
-                  { pitch: next ? 45 : 0 },
-                  { duration: 300 },
-                );
+                mapRef.current?.animateCamera({ pitch: next ? 45 : 0 }, { duration: 300 });
                 return next;
               });
               void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
@@ -541,7 +584,6 @@ export function MapScreen() {
           </Pressable>
         </GlassCard>
       </Animated.View>
-
     </View>
   );
 }

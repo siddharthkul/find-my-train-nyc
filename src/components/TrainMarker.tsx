@@ -35,11 +35,7 @@ const ARROW_OUTLINE_COLOR = '#FFFFFF';
  *   - A small triangular arrow positioned on the edge of the pill
  *     pointing in the direction of travel.
  */
-export const TrainMarker = memo(function TrainMarker({
-  train,
-  mapHeading,
-  hideArrow,
-}: Props) {
+export const TrainMarker = memo(function TrainMarker({ train, mapHeading, hideArrow }: Props) {
   const routeColor = getRouteColor(train.routeId);
   const textColor = getRouteTextColor(train.routeId);
   const showArrow = train.direction !== 'UNK' && !hideArrow;
@@ -67,9 +63,7 @@ export const TrainMarker = memo(function TrainMarker({
         <View style={styles.pill}>
           <Ionicons name="subway" size={ICON_SIZE} color={routeColor} />
           <View style={[styles.routeDot, { backgroundColor: routeColor }]}>
-            <Text style={[styles.routeText, { color: textColor }]}>
-              {train.routeId}
-            </Text>
+            <Text style={[styles.routeText, { color: textColor }]}>{train.routeId}</Text>
           </View>
         </View>
 

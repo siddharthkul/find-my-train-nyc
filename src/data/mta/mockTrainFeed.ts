@@ -28,7 +28,14 @@ export function getMockTrains(): Train[] {
       latitude: jitter(seed.latitude, 0.0045),
       longitude: jitter(seed.longitude, 0.0045),
       bearing: nextBearing,
-      direction: nextBearing < 90 || nextBearing >= 315 ? 'N' : nextBearing < 180 ? 'E' : nextBearing < 270 ? 'S' : 'W',
+      direction:
+        nextBearing < 90 || nextBearing >= 315
+          ? 'N'
+          : nextBearing < 180
+            ? 'E'
+            : nextBearing < 270
+              ? 'S'
+              : 'W',
       tripId: null,
       currentStopId: null,
       lastUpdatedMs: now,

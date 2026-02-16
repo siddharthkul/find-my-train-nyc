@@ -3,7 +3,7 @@ import { memo, useMemo } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { Marker, type Region } from 'react-native-maps';
 import type { SubwayEntrance } from '../data/mta/subwayEntrances';
-import { type AppColors, tokens, useColors } from '../theme/tokens';
+import { type AppColors, useColors } from '../theme/tokens';
 
 /** Only show entrance markers when zoomed in past this delta. */
 const SHOW_THRESHOLD = 0.025;
@@ -18,10 +18,7 @@ type Props = {
  * Elevators get a distinct blue badge; stairs show a subtle entrance icon.
  * Escalators are not shown.
  */
-export const EntranceMarkers = memo(function EntranceMarkers({
-  entrances,
-  region,
-}: Props) {
+export const EntranceMarkers = memo(function EntranceMarkers({ entrances, region }: Props) {
   const colors = useColors();
   const zoomDelta = region?.latitudeDelta ?? 0.22;
   const show = zoomDelta < SHOW_THRESHOLD && entrances.length > 0;
@@ -35,15 +32,14 @@ export const EntranceMarkers = memo(function EntranceMarkers({
     const minLng = region.longitude - lngPad;
     const maxLng = region.longitude + lngPad;
 
-    return entrances
-      .filter(
-        (e) =>
-          e.entranceType !== 'Escalator' &&
-          e.lat >= minLat &&
-          e.lat <= maxLat &&
-          e.lng >= minLng &&
-          e.lng <= maxLng,
-      );
+    return entrances.filter(
+      (e) =>
+        e.entranceType !== 'Escalator' &&
+        e.lat >= minLat &&
+        e.lat <= maxLat &&
+        e.lng >= minLng &&
+        e.lng <= maxLng,
+    );
   }, [show, entrances, region]);
 
   if (!show) return null;

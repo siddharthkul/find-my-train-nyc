@@ -30,10 +30,7 @@ export function useServiceAlerts(routes?: string[]) {
       const alerts = await subwayService.fetchAlerts(routesRef.current);
       setAlerts(alerts);
     } catch (error) {
-      const message =
-        error instanceof Error
-          ? error.message
-          : 'Could not load service alerts.';
+      const message = error instanceof Error ? error.message : 'Could not load service alerts.';
       setError(message);
     } finally {
       setLoading(false);

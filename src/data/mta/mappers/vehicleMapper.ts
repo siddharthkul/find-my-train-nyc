@@ -10,19 +10,12 @@ const RAD_TO_DEG = 180 / Math.PI;
 /**
  * Compute the initial compass bearing (0–360°) from point A to point B.
  */
-function computeBearing(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number,
-): number {
+function computeBearing(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const φ1 = lat1 * DEG_TO_RAD;
   const φ2 = lat2 * DEG_TO_RAD;
   const Δλ = (lon2 - lon1) * DEG_TO_RAD;
   const y = Math.sin(Δλ) * Math.cos(φ2);
-  const x =
-    Math.cos(φ1) * Math.sin(φ2) -
-    Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
+  const x = Math.cos(φ1) * Math.sin(φ2) - Math.sin(φ1) * Math.cos(φ2) * Math.cos(Δλ);
   return (Math.atan2(y, x) * RAD_TO_DEG + 360) % 360;
 }
 
@@ -84,9 +77,7 @@ function createVehicleId(
  *
  * Pure function — no side effects, no network calls.
  */
-export function mapVehiclePositions(
-  feed: transit_realtime.IFeedMessage,
-): VehiclePosition[] {
+export function mapVehiclePositions(feed: transit_realtime.IFeedMessage): VehiclePosition[] {
   const nowMs = Date.now();
 
   // ── Index trip updates by tripId for fast lookup ──────────────
@@ -135,12 +126,7 @@ export function mapVehiclePositions(
     }
 
     if (nextCoords) {
-      bearing = computeBearing(
-        curCoords.lat,
-        curCoords.lng,
-        nextCoords.lat,
-        nextCoords.lng,
-      );
+      bearing = computeBearing(curCoords.lat, curCoords.lng, nextCoords.lat, nextCoords.lng);
     }
 
     // Determine direction — from real bearing when available, else fallback

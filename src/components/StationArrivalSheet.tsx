@@ -87,11 +87,9 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
   animatedValue,
   onDismiss,
 }: Props) {
-  const insets = useSafeAreaInsets();
+  const _insets = useSafeAreaInsets();
   const colors = useColors();
-  const rawArrivals = useArrivalStore(
-    (state) => state.arrivals[station.id],
-  );
+  const rawArrivals = useArrivalStore((state) => state.arrivals[station.id]);
   const isLoading = useArrivalStore((state) => state.isLoading);
   const arrivals = rawArrivals ?? EMPTY_ARRIVALS;
 
@@ -144,22 +142,18 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
         {/* Header */}
         <View style={sheetStyles.headerRow}>
           <View style={styles.headerLeft}>
-            <Text
-              style={[styles.stationName, { color: colors.labelPrimary }]}
-              numberOfLines={1}
-            >
+            <Text style={[styles.stationName, { color: colors.labelPrimary }]} numberOfLines={1}>
               {station.name}
             </Text>
             <View style={styles.routeBadges}>
               {station.routes.map((route) => (
                 <View
                   key={route}
-                  style={[
-                    styles.smallBadge,
-                    { backgroundColor: getRouteColor(route) },
-                  ]}
+                  style={[styles.smallBadge, { backgroundColor: getRouteColor(route) }]}
                 >
-                  <Text style={[styles.smallBadgeText, { color: getRouteTextColor(route) }]}>{route}</Text>
+                  <Text style={[styles.smallBadgeText, { color: getRouteTextColor(route) }]}>
+                    {route}
+                  </Text>
                 </View>
               ))}
               {station.ada && (
@@ -179,9 +173,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
               void Haptics.selectionAsync();
             }}
           >
-            <Text style={[sheetStyles.doneText, { color: colors.accent }]}>
-              Done
-            </Text>
+            <Text style={[sheetStyles.doneText, { color: colors.accent }]}>Done</Text>
           </Pressable>
         </View>
 
@@ -189,9 +181,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
         {isLoading && arrivals.length === 0 ? (
           <View style={styles.loadingRow}>
             <ActivityIndicator size="small" color={colors.labelSecondary} />
-            <Text
-              style={[styles.loadingText, { color: colors.labelSecondary }]}
-            >
+            <Text style={[styles.loadingText, { color: colors.labelSecondary }]}>
               Loading arrivals…
             </Text>
           </View>
@@ -206,12 +196,7 @@ export const StationArrivalSheet = memo(function StationArrivalSheet({
             showsVerticalScrollIndicator={false}
           >
             {groups.map((group) => (
-              <DirectionGroup
-                key={group.label}
-                group={group}
-                nowMs={nowMs}
-                colors={colors}
-              />
+              <DirectionGroup key={group.label} group={group} nowMs={nowMs} colors={colors} />
             ))}
           </ScrollView>
         )}
@@ -233,16 +218,9 @@ const DirectionGroup = memo(function DirectionGroup({
 }) {
   return (
     <View style={styles.group}>
-      <Text style={[styles.groupLabel, { color: colors.labelSecondary }]}>
-        {group.label}
-      </Text>
+      <Text style={[styles.groupLabel, { color: colors.labelSecondary }]}>{group.label}</Text>
       {group.arrivals.map((arrival) => (
-        <ArrivalRow
-          key={arrival.id}
-          arrival={arrival}
-          nowMs={nowMs}
-          colors={colors}
-        />
+        <ArrivalRow key={arrival.id} arrival={arrival} nowMs={nowMs} colors={colors} />
       ))}
     </View>
   );
@@ -266,7 +244,9 @@ const ArrivalRow = memo(function ArrivalRow({
   return (
     <View style={styles.arrivalRow}>
       <View style={[styles.arrivalBadge, { backgroundColor: routeColor }]}>
-        <Text style={[styles.arrivalBadgeText, { color: getRouteTextColor(arrival.routeId) }]}>{arrival.routeId}</Text>
+        <Text style={[styles.arrivalBadgeText, { color: getRouteTextColor(arrival.routeId) }]}>
+          {arrival.routeId}
+        </Text>
       </View>
       <Text
         style={[
@@ -280,15 +260,8 @@ const ArrivalRow = memo(function ArrivalRow({
         {countdown}
       </Text>
       {arrival.delay > 60 && (
-        <View
-          style={[
-            styles.delayBadge,
-            { backgroundColor: colors.dangerBorder },
-          ]}
-        >
-          <Text style={[styles.delayText, { color: colors.danger }]}>
-            Delayed
-          </Text>
+        <View style={[styles.delayBadge, { backgroundColor: colors.dangerBorder }]}>
+          <Text style={[styles.delayText, { color: colors.danger }]}>Delayed</Text>
         </View>
       )}
     </View>

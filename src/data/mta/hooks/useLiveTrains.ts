@@ -32,9 +32,7 @@ export function useLiveTrains(routes?: string[]) {
       setTrains(vehicles, subwayService.mode);
     } catch (error) {
       const message =
-        error instanceof Error
-          ? error.message
-          : 'Could not load live trains at the moment.';
+        error instanceof Error ? error.message : 'Could not load live trains at the moment.';
       setError(message);
     } finally {
       setLoading(false);

@@ -191,6 +191,13 @@ export const tokens = {
 // and adds its own specifics (maxHeight, content area, etc.).
 
 export const sheetStyles = StyleSheet.create({
+  /** Full-width overlay container for animated bottom sheets */
+  overlay: {
+    position: 'absolute' as const,
+    left: 0,
+    right: 0,
+    bottom: 0,
+  },
   /** Edge-to-edge card — top corners rounded, flush to bottom like Apple Maps */
   card: {
     borderTopLeftRadius: tokens.radius.xl,

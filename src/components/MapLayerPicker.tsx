@@ -1,13 +1,7 @@
 import { Ionicons } from '@expo/vector-icons';
 import * as Haptics from 'expo-haptics';
 import { memo, useCallback, useEffect, useRef } from 'react';
-import {
-  Animated,
-  Pressable,
-  StyleSheet,
-  Text,
-  View,
-} from 'react-native';
+import { Animated, Pressable, StyleSheet, Text, View } from 'react-native';
 import type { MapType } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { sheetStyles, tokens, useColors } from '../theme/tokens';
@@ -71,10 +65,7 @@ export const MapLayerPicker = memo(function MapLayerPicker({
 
   return (
     <Animated.View
-      style={[
-        styles.container,
-        { transform: [{ translateY: slideAnim }] },
-      ]}
+      style={[styles.container, { transform: [{ translateY: slideAnim }] }]}
       onLayout={handleLayout}
     >
       <GlassCard
@@ -90,9 +81,7 @@ export const MapLayerPicker = memo(function MapLayerPicker({
       >
         {/* Header */}
         <View style={styles.header}>
-          <Text style={[styles.title, { color: colors.labelPrimary }]}>
-            Map Style
-          </Text>
+          <Text style={[styles.title, { color: colors.labelPrimary }]}>Map Style</Text>
           <Pressable hitSlop={tokens.size.hitSlop} onPress={handleClose}>
             <Ionicons name="close-circle" size={28} color={colors.labelSecondary} />
           </Pressable>
@@ -108,9 +97,7 @@ export const MapLayerPicker = memo(function MapLayerPicker({
                 style={[
                   styles.option,
                   {
-                    backgroundColor: isActive
-                      ? colors.accent
-                      : colors.searchFieldBg,
+                    backgroundColor: isActive ? colors.accent : colors.searchFieldBg,
                   },
                 ]}
                 onPress={() => handleSelect(opt.type)}

@@ -3,10 +3,7 @@ import { fetchFeeds } from '../feeds/feedFetcher';
 import type { FetchFeedOptions } from '../feeds/feedFetcher';
 import { ALL_FEEDS, getFeedsForRoutes } from '../feeds/feedRegistry';
 import { filterAlertsForRoutes, mapAlerts } from '../mappers/alertMapper';
-import {
-  filterArrivalsForStation,
-  mapTripUpdates,
-} from '../mappers/tripUpdateMapper';
+import { filterArrivalsForStation, mapTripUpdates } from '../mappers/tripUpdateMapper';
 import { mapVehiclePositions } from '../mappers/vehicleMapper';
 import { getMockTrains } from '../mockTrainFeed';
 import type {
@@ -22,9 +19,7 @@ import { FeedId } from '../types';
 // ── Helpers ────────────────────────────────────────────────────────
 
 /** Deduplicate vehicles by ID, keeping the last occurrence. */
-function deduplicateVehicles(
-  vehicles: VehiclePosition[],
-): VehiclePosition[] {
+function deduplicateVehicles(vehicles: VehiclePosition[]): VehiclePosition[] {
   const map = new Map<string, VehiclePosition>();
   for (const v of vehicles) {
     map.set(v.id, v);

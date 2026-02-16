@@ -24,10 +24,7 @@ const VALHALLA_BASE = 'https://valhalla1.openstreetmap.de/route';
  *
  * No API key required — uses the public OpenStreetMap Valhalla server.
  */
-export async function fetchWalkingRoute(
-  from: Coordinate,
-  to: Coordinate,
-): Promise<WalkingRoute> {
+export async function fetchWalkingRoute(from: Coordinate, to: Coordinate): Promise<WalkingRoute> {
   const params = {
     locations: [
       { lat: from.latitude, lon: from.longitude },

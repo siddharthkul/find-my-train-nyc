@@ -3,9 +3,7 @@ import { AlertActivePeriod, ServiceAlert } from '../types';
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function toSeconds(
-  value: number | object | null | undefined,
-): number | null {
+function toSeconds(value: number | object | null | undefined): number | null {
   if (value === null || value === undefined) return null;
   if (typeof value === 'number') return value;
   if (typeof (value as { toNumber?: unknown }).toNumber === 'function') {
@@ -23,9 +21,7 @@ function extractTranslatedText(
 ): string {
   if (!translated?.translation?.length) return '';
 
-  const english = translated.translation.find(
-    (t) => !t.language || t.language === 'en',
-  );
+  const english = translated.translation.find((t) => !t.language || t.language === 'en');
   return (english ?? translated.translation[0])?.text ?? '';
 }
 
@@ -35,9 +31,7 @@ function extractTranslatedText(
  * Extracts service alerts from Alert entities in a decoded GTFS-RT
  * FeedMessage.  Pure function — no side effects.
  */
-export function mapAlerts(
-  feed: transit_realtime.IFeedMessage,
-): ServiceAlert[] {
+export function mapAlerts(feed: transit_realtime.IFeedMessage): ServiceAlert[] {
   const alerts: ServiceAlert[] = [];
 
   for (const entity of feed.entity ?? []) {
@@ -52,9 +46,7 @@ export function mapAlerts(
     }
 
     // Parse active periods
-    const activePeriods: AlertActivePeriod[] = (
-      alert.activePeriod ?? []
-    ).map((period) => ({
+    const activePeriods: AlertActivePeriod[] = (alert.activePeriod ?? []).map((period) => ({
       startTime: toSeconds(period.start),
       endTime: toSeconds(period.end),
     }));
@@ -81,13 +73,8 @@ export function mapAlerts(
  * Filters alerts to only include those affecting the given routes.
  * If `routes` is empty or undefined, returns all alerts.
  */
-export function filterAlertsForRoutes(
-  alerts: ServiceAlert[],
-  routes?: string[],
-): ServiceAlert[] {
+export function filterAlertsForRoutes(alerts: ServiceAlert[], routes?: string[]): ServiceAlert[] {
   if (!routes || routes.length === 0) return alerts;
   const routeSet = new Set(routes.map((r) => r.toUpperCase()));
-  return alerts.filter((a) =>
-    a.routeIds.some((rid) => routeSet.has(rid)),
-  );
+  return alerts.filter((a) => a.routeIds.some((rid) => routeSet.has(rid)));
 }

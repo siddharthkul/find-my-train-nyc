@@ -2,10 +2,7 @@ import { memo, useMemo } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import { Marker, type Region } from 'react-native-maps';
 import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
-import {
-  subwayStations,
-  type SubwayStation,
-} from '../data/mta/subwayStations';
+import { subwayStations, type SubwayStation } from '../data/mta/subwayStations';
 import { type AppColors, tokens, useColors } from '../theme/tokens';
 
 /** Only show station dots when zoomed in past this delta. */
@@ -25,7 +22,11 @@ type Props = {
  * Visibility is tied to zoom level so the map isn't cluttered when
  * zoomed out.
  */
-export const StationMarkers = memo(function StationMarkers({ region, onStationPress, activeStationId }: Props) {
+export const StationMarkers = memo(function StationMarkers({
+  region,
+  onStationPress,
+  activeStationId,
+}: Props) {
   const colors = useColors();
   const zoomDelta = region?.latitudeDelta ?? 0.22;
   const showStations = zoomDelta < SHOW_THRESHOLD;
@@ -44,8 +45,7 @@ export const StationMarkers = memo(function StationMarkers({ region, onStationPr
     const maxLng = region.longitude + lngPad;
 
     const inBounds = subwayStations.filter(
-      (s) =>
-        s.lat >= minLat && s.lat <= maxLat && s.lng >= minLng && s.lng <= maxLng,
+      (s) => s.lat >= minLat && s.lat <= maxLat && s.lng >= minLng && s.lng <= maxLng,
     );
 
     // Always include the active station so it's never missing from the map
@@ -111,7 +111,12 @@ const StationDot = memo(function StationDot({
       >
         <View style={styles.activeWrapper}>
           {/* Circle with route letter */}
-          <View style={[styles.activeCircle, { backgroundColor: primaryColor, shadowColor: primaryColor }]}>
+          <View
+            style={[
+              styles.activeCircle,
+              { backgroundColor: primaryColor, shadowColor: primaryColor },
+            ]}
+          >
             <Text style={[styles.activeRouteText, { color: textColor }]}>
               {station.routes[0] ?? ''}
             </Text>
@@ -119,8 +124,16 @@ const StationDot = memo(function StationDot({
           {/* Pointer tail */}
           <View style={[styles.activePointer, { borderTopColor: primaryColor }]} />
           {/* Station name label */}
-          <View style={[styles.activeLabel, { backgroundColor: colors.stationLabelBg, shadowColor: colors.shadow }]}>
-            <Text style={[styles.activeLabelText, { color: colors.stationLabel }]} numberOfLines={1}>
+          <View
+            style={[
+              styles.activeLabel,
+              { backgroundColor: colors.stationLabelBg, shadowColor: colors.shadow },
+            ]}
+          >
+            <Text
+              style={[styles.activeLabelText, { color: colors.stationLabel }]}
+              numberOfLines={1}
+            >
               {station.name}
             </Text>
           </View>
@@ -143,18 +156,17 @@ const StationDot = memo(function StationDot({
         <View style={styles.hitArea} />
         <View style={[styles.dotOuter, { shadowColor: colors.shadow }]}>
           <View
-            style={[
-              styles.dot,
-              { borderColor: primaryColor, backgroundColor: colors.stationDot },
-            ]}
+            style={[styles.dot, { borderColor: primaryColor, backgroundColor: colors.stationDot }]}
           />
         </View>
         {showLabel ? (
-          <View style={[styles.labelPill, { backgroundColor: colors.stationLabelBg, shadowColor: colors.shadow }]}>
-            <Text
-              style={[styles.labelText, { color: colors.stationLabel }]}
-              numberOfLines={1}
-            >
+          <View
+            style={[
+              styles.labelPill,
+              { backgroundColor: colors.stationLabelBg, shadowColor: colors.shadow },
+            ]}
+          >
+            <Text style={[styles.labelText, { color: colors.stationLabel }]} numberOfLines={1}>
               {station.name}
             </Text>
           </View>

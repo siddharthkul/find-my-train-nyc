@@ -3,9 +3,7 @@ import { ArrivalPrediction, CardinalDirection } from '../types';
 
 // ── Helpers ────────────────────────────────────────────────────────
 
-function toSeconds(
-  value: number | object | null | undefined,
-): number {
+function toSeconds(value: number | object | null | undefined): number {
   if (value === null || value === undefined) return 0;
   if (typeof value === 'number') return value;
   // gtfs-realtime-bindings may return Long objects for timestamps
@@ -15,9 +13,7 @@ function toSeconds(
   return 0;
 }
 
-function extractDirection(
-  tripId: string | null | undefined,
-): CardinalDirection {
+function extractDirection(tripId: string | null | undefined): CardinalDirection {
   const token = tripId?.split('_').pop();
   if (token === 'N') return 'N';
   if (token === 'S') return 'S';
@@ -33,9 +29,7 @@ function extractDirection(
  * Each `StopTimeUpdate` in a trip produces one `ArrivalPrediction`.
  * Only entries with a future arrival time are included.
  */
-export function mapTripUpdates(
-  feed: transit_realtime.IFeedMessage,
-): ArrivalPrediction[] {
+export function mapTripUpdates(feed: transit_realtime.IFeedMessage): ArrivalPrediction[] {
   const nowSec = Math.floor(Date.now() / 1000);
   const predictions: ArrivalPrediction[] = [];
 
