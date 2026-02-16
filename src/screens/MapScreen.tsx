@@ -5,21 +5,28 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Animated,
+  Dimensions,
   Pressable,
   StyleSheet,
   Text,
   View,
 } from 'react-native';
-import MapView, { MapType, Region } from 'react-native-maps';
+import MapView, { MapType, Polyline, Region } from 'react-native-maps';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { CompassButton } from '../components/CompassButton';
+import { EntranceMarkers } from '../components/EntranceMarkers';
 import { GlassCard } from '../components/GlassCard';
 import { MapLayerPicker } from '../components/MapLayerPicker';
 import { NearbyTrainsBar } from '../components/NearbyTrainsBar';
 import { StationMarkers } from '../components/StationMarkers';
 import { SubwayLines } from '../components/SubwayLines';
 import { TrainMarker } from '../components/TrainMarker';
+import {
+  type WalkingRoute,
+  fetchWalkingRoute,
+} from '../data/directions/walkingRoute';
 import { useStationArrivals } from '../data/mta/hooks/useStationArrivals';
+import { useSubwayEntrances } from '../data/mta/hooks/useSubwayEntrances';
 import { useArrivalStore } from '../data/mta/stores/arrivalStore';
 import { subwayStations } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
@@ -114,7 +121,97 @@ export function MapScreen() {
   const activeStationId = activeStation?.id ?? null;
   const isPinnedStation = !!selectedStationId;
 
+  // Fetch subway entrance data for the active station
+  const stationEntrances = useSubwayEntrances(activeStationId);
+
   const [showLayerPicker, setShowLayerPicker] = useState(false);
+
+  // Walking directions state
+  const [walkingRoute, setWalkingRoute] = useState<WalkingRoute | null>(null);
+  const [isLoadingRoute, setIsLoadingRoute] = useState(false);
+
+  const startDirections = useCallback(async () => {
+    if (!activeStation) return;
+    try {
+      setIsLoadingRoute(true);
+
+      // Get user's current location
+      if (!locationPermission) {
+        const { status } = await Location.requestForegroundPermissionsAsync();
+        if (status !== 'granted') {
+          setIsLoadingRoute(false);
+          return;
+        }
+        setLocationPermission(true);
+      }
+      const loc = await Location.getCurrentPositionAsync({
+        accuracy: Location.Accuracy.Balanced,
+      });
+      const from = { latitude: loc.coords.latitude, longitude: loc.coords.longitude };
+
+      // Pick the nearest entry-allowed entrance to the user's location.
+      // Falls back to station centroid when no entrance data is available.
+      const entryEntrances = stationEntrances.filter((e) => e.entry);
+      const candidates = entryEntrances.length > 0 ? entryEntrances : stationEntrances;
+      let to: { latitude: number; longitude: number };
+
+      if (candidates.length > 0) {
+        let nearestDist = Infinity;
+        let nearest = candidates[0];
+        for (const ent of candidates) {
+          const d =
+            (ent.lat - from.latitude) ** 2 + (ent.lng - from.longitude) ** 2;
+          if (d < nearestDist) {
+            nearestDist = d;
+            nearest = ent;
+          }
+        }
+        to = { latitude: nearest.lat, longitude: nearest.lng };
+      } else {
+        to = { latitude: activeStation.lat, longitude: activeStation.lng };
+      }
+
+      const route = await fetchWalkingRoute(from, to);
+      setWalkingRoute(route);
+
+      // Fit the route into the top half of the screen (above the bottom sheet).
+      // We use fitToCoordinates with generous bottom padding so both start
+      // and end are visible and not hidden behind the NearbyTrainsBar.
+      if (route.coordinates.length >= 2 && mapRef.current) {
+        const screenH = Dimensions.get('window').height;
+        // Bottom padding = bottom sheet height + some extra breathing room
+        // This pushes the "fit" area into roughly the top half of the screen.
+        const bottomPad = Math.max(nearbyBarHeight + 60, screenH * 0.5);
+        mapRef.current.fitToCoordinates(route.coordinates, {
+          edgePadding: { top: 120, right: 60, bottom: bottomPad, left: 60 },
+          animated: true,
+        });
+      }
+
+      void Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+    } catch (err) {
+      console.warn('[Directions] Failed to fetch route:', err);
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  }, [activeStation, stationEntrances, locationPermission, nearbyBarHeight]);
+
+  const endDirections = useCallback(() => {
+    setWalkingRoute(null);
+    // Re-center on the active station so the marker stays visible and highlighted
+    if (activeStation && mapRef.current) {
+      mapRef.current.animateToRegion(
+        {
+          latitude: activeStation.lat - 0.003,
+          longitude: activeStation.lng,
+          latitudeDelta: 0.015,
+          longitudeDelta: 0.015,
+        },
+        400,
+      );
+    }
+    void Haptics.selectionAsync();
+  }, [activeStation]);
 
   // Request foreground location permission on mount and center on user
   useEffect(() => {
@@ -171,20 +268,14 @@ export function MapScreen() {
   }, [locationPermission]);
 
   // Throttle region state updates so we don't re-render on every tiny pan.
+  // Uses a short debounce but always updates — the previous "skip small pans"
+  // logic caused stations to intermittently disappear because the stored region
+  // drifted too far from the actual viewport.
   const handleRegionChange = useCallback((region: Region) => {
     regionRef.current = region;
     if (regionTimer.current) clearTimeout(regionTimer.current);
     regionTimer.current = setTimeout(() => {
-      setCurrentRegion((prev) => {
-        const zoomChanged =
-          Math.abs(prev.latitudeDelta - region.latitudeDelta) > 0.005;
-        const panned =
-          Math.abs(prev.latitude - region.latitude) >
-            prev.latitudeDelta * 0.3 ||
-          Math.abs(prev.longitude - region.longitude) >
-            prev.longitudeDelta * 0.3;
-        return zoomChanged || panned ? region : prev;
-      });
+      setCurrentRegion(region);
 
       // Sync map heading so train direction arrows stay correct when rotated
       mapRef.current?.getCamera().then((cam) => {
@@ -194,7 +285,7 @@ export function MapScreen() {
         });
         setIsMapMoving(false);
       });
-    }, 150);
+    }, 120);
   }, []);
 
   // Animate the map controls island above the bottom bar (native driver, 60fps)
@@ -297,6 +388,7 @@ export function MapScreen() {
         mapType={mapType}
         showsUserLocation={!!locationPermission}
         showsMyLocationButton={false}
+        showsPointsOfInterest={false}
         onRegionChange={() => {
           setIsMapMoving(true);
           // Live-sync heading for smooth compass rotation
@@ -308,7 +400,18 @@ export function MapScreen() {
       >
         <SubwayLines region={currentRegion} />
         <StationMarkers region={currentRegion} onStationPress={handleStationPress} activeStationId={activeStationId} />
+        <EntranceMarkers entrances={stationEntrances} region={currentRegion} />
         {markerNodes}
+        {walkingRoute && (
+          <Polyline
+            coordinates={walkingRoute.coordinates}
+            strokeColor="#007AFF"
+            strokeWidth={5}
+            lineDashPattern={[0]}
+            lineJoin="round"
+            lineCap="round"
+          />
+        )}
       </MapView>
 
       {/* Header info pill */}
@@ -368,6 +471,10 @@ export function MapScreen() {
             void Haptics.selectionAsync();
           }}
           onHeightChange={setNearbyBarHeight}
+          walkingRoute={walkingRoute}
+          isLoadingRoute={isLoadingRoute}
+          onStartDirections={startDirections}
+          onEndDirections={endDirections}
         />
       )}
 

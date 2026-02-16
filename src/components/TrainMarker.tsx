@@ -1,8 +1,9 @@
 import { memo } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { Marker } from 'react-native-maps';
+import { Ionicons } from '@expo/vector-icons';
 import { Train } from '../types/train';
-import { getRouteBadgeImage } from '../data/mta/markerImages';
+import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
 
 type Props = {
   train: Train;
@@ -10,42 +11,42 @@ type Props = {
   hideArrow?: boolean;
 };
 
-const BADGE_SIZE = 28;
+const ROUTE_DOT = 18;
+const ICON_SIZE = 14;
+const PILL_PAD = 3;
+const PILL_GAP = 2;
+const PILL_W = PILL_PAD + ICON_SIZE + PILL_GAP + ROUTE_DOT + PILL_PAD;
+const PILL_H = ROUTE_DOT + PILL_PAD * 2;
+
 const ARROW_SIZE = 10;
-const ARROW_OFFSET = BADGE_SIZE / 2 + ARROW_SIZE / 2 + 2;
-const WRAPPER_SIZE = BADGE_SIZE + ARROW_SIZE * 2 + 6;
+const ARROW_OFFSET = PILL_W / 2 + ARROW_SIZE / 2 + 2;
+const WRAPPER_SIZE = PILL_W + ARROW_SIZE * 2 + 6;
 const CENTER = WRAPPER_SIZE / 2;
 const HALF_ARROW = (ARROW_SIZE + 4) / 2;
 
 const DEG_TO_RAD = Math.PI / 180;
 
-/** Dark arrow with a white outline — visible over any badge or map tile. */
 const ARROW_COLOR = '#1C1C1E';
 const ARROW_OUTLINE_COLOR = '#FFFFFF';
 
 /**
  * Renders a train on the map with:
- *   - The route badge (colored circle with route letter/number)
- *   - A small triangular arrow positioned on the edge of the badge
+ *   - A white pill-shaped marker containing a train icon + route badge
+ *   - A small triangular arrow positioned on the edge of the pill
  *     pointing in the direction of travel.
- *
- * Arrow placement uses explicit trig (sin/cos) to orbit around
- * the badge center — independent of CSS transform quirks.
  */
 export const TrainMarker = memo(function TrainMarker({
   train,
   mapHeading,
   hideArrow,
 }: Props) {
-  const badgeImage = getRouteBadgeImage(train.routeId);
+  const routeColor = getRouteColor(train.routeId);
+  const textColor = getRouteTextColor(train.routeId);
   const showArrow = train.direction !== 'UNK' && !hideArrow;
 
-  // Adjust bearing for map rotation
   const bearingDeg = train.bearing - mapHeading;
   const bearingRad = bearingDeg * DEG_TO_RAD;
 
-  // Position the arrow on a circle around the badge using trig
-  // sin(bearing) gives X offset (east positive), -cos(bearing) gives Y offset (north = up = negative Y)
   const arrowLeft = CENTER + ARROW_OFFSET * Math.sin(bearingRad) - HALF_ARROW;
   const arrowTop = CENTER - ARROW_OFFSET * Math.cos(bearingRad) - HALF_ARROW;
 
@@ -62,12 +63,15 @@ export const TrainMarker = memo(function TrainMarker({
       tappable={false}
     >
       <View style={styles.wrapper} pointerEvents="none">
-        {/* Route badge */}
-        <Image
-          source={badgeImage}
-          style={styles.badge}
-          resizeMode="contain"
-        />
+        {/* Pill-shaped marker: train icon + route dot */}
+        <View style={styles.pill}>
+          <Ionicons name="subway" size={ICON_SIZE} color={routeColor} />
+          <View style={[styles.routeDot, { backgroundColor: routeColor }]}>
+            <Text style={[styles.routeText, { color: textColor }]}>
+              {train.routeId}
+            </Text>
+          </View>
+        </View>
 
         {/* Directional arrow — positioned with trig, rotated to face outward */}
         {showArrow && (
@@ -81,9 +85,7 @@ export const TrainMarker = memo(function TrainMarker({
               },
             ]}
           >
-            {/* White outline (slightly larger triangle behind) */}
             <View style={styles.arrowOutline} />
-            {/* Dark foreground triangle */}
             <View style={styles.arrowTriangle} />
           </View>
         )}
@@ -99,9 +101,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  badge: {
-    width: BADGE_SIZE,
-    height: BADGE_SIZE,
+  pill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderRadius: PILL_H / 2,
+    paddingHorizontal: PILL_PAD,
+    paddingVertical: PILL_PAD,
+    shadowColor: '#000000',
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    shadowOffset: { width: 0, height: 2 },
+    elevation: 4,
+  },
+  routeDot: {
+    width: ROUTE_DOT,
+    height: ROUTE_DOT,
+    borderRadius: ROUTE_DOT / 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: PILL_GAP,
+  },
+  routeText: {
+    fontSize: 10,
+    fontWeight: '800',
   },
   arrowAnchor: {
     position: 'absolute',

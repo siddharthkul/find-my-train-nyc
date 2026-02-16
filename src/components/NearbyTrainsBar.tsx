@@ -11,6 +11,11 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import {
+  type WalkingRoute,
+  formatDistance,
+  formatWalkTime,
+} from '../data/directions/walkingRoute';
 import { getRouteColor, getRouteTextColor } from '../data/mta/routeColors';
 import type { SubwayStation } from '../data/mta/subwayStations';
 import type { ArrivalPrediction } from '../data/mta/types';
@@ -29,6 +34,14 @@ type Props = {
   onDismissStation?: () => void;
   onSearchPress: () => void;
   onHeightChange?: (height: number) => void;
+  /** Active walking route (null = no active directions) */
+  walkingRoute?: WalkingRoute | null;
+  /** Whether the route is currently being fetched */
+  isLoadingRoute?: boolean;
+  /** Start in-app walking directions to the station */
+  onStartDirections?: () => void;
+  /** End/dismiss the active walking directions */
+  onEndDirections?: () => void;
 };
 
 type ArrivalRow = {
@@ -74,6 +87,10 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
   onDismissStation,
   onSearchPress,
   onHeightChange,
+  walkingRoute = null,
+  isLoadingRoute = false,
+  onStartDirections,
+  onEndDirections,
 }: Props) {
   const stationName = station?.name ?? '';
   const insets = useSafeAreaInsets();
@@ -130,6 +147,14 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
     return Array.from(best.values()).sort((a, b) => a.etaMin - b.etaMin);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [arrivals, tick]);
+
+  const handleDirectionsPress = useCallback(() => {
+    if (walkingRoute) {
+      onEndDirections?.();
+    } else {
+      onStartDirections?.();
+    }
+  }, [walkingRoute, onStartDirections, onEndDirections]);
 
   // Distinguish between "still loading" and "loaded but empty"
   const hasLoadedOnce = arrivals.length > 0 || rows.length > 0;
@@ -193,6 +218,53 @@ export const NearbyTrainsBar = memo(function NearbyTrainsBar({
                 ))
               : null}
           </View>
+        ) : null}
+
+        {/* Walking route info banner */}
+        {walkingRoute && stationName ? (
+          <View style={[styles.routeBanner, { backgroundColor: colors.accent }]}>
+            <Ionicons name="walk" size={20} color="#FFFFFF" />
+            <View style={styles.routeBannerInfo}>
+              <Text style={styles.routeBannerTime}>
+                {formatWalkTime(walkingRoute.durationSeconds)}
+              </Text>
+              <Text style={styles.routeBannerDist}>
+                {formatDistance(walkingRoute.distanceMeters)} to {stationName}
+              </Text>
+            </View>
+            <Pressable
+              style={({ pressed }) => [
+                styles.endBtn,
+                pressed && { opacity: 0.8 },
+              ]}
+              onPress={onEndDirections}
+            >
+              <Text style={styles.endBtnText}>End</Text>
+            </Pressable>
+          </View>
+        ) : null}
+
+        {/* Directions button (only when no active route) */}
+        {stationName && !walkingRoute ? (
+          <Pressable
+            style={({ pressed }) => [
+              styles.directionsBtn,
+              { backgroundColor: colors.accent },
+              pressed && { opacity: 0.85 },
+              isLoadingRoute && { opacity: 0.6 },
+            ]}
+            onPress={handleDirectionsPress}
+            disabled={isLoadingRoute}
+          >
+            {isLoadingRoute ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Ionicons name="walk" size={16} color="#FFFFFF" />
+            )}
+            <Text style={styles.directionsBtnText}>
+              {isLoadingRoute ? 'Loading…' : 'Directions'}
+            </Text>
+          </Pressable>
         ) : null}
 
         {/* Arrivals list */}
@@ -334,6 +406,54 @@ const styles = StyleSheet.create({
   miniRouteText: {
     fontSize: tokens.font.size.xs,
     fontWeight: tokens.font.weight.bold,
+  },
+  routeBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: tokens.spacing.sm,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm + 2,
+    borderRadius: tokens.radius.md,
+    marginBottom: tokens.spacing.xs,
+  },
+  routeBannerInfo: {
+    flex: 1,
+  },
+  routeBannerTime: {
+    color: '#FFFFFF',
+    fontSize: tokens.font.size.lg,
+    fontWeight: tokens.font.weight.bold,
+  },
+  routeBannerDist: {
+    color: 'rgba(255,255,255,0.8)',
+    fontSize: tokens.font.size.sm,
+    fontWeight: tokens.font.weight.medium,
+  },
+  endBtn: {
+    backgroundColor: 'rgba(255,255,255,0.25)',
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.xs + 2,
+    borderRadius: tokens.radius.full,
+  },
+  endBtnText: {
+    color: '#FFFFFF',
+    fontSize: tokens.font.size.md,
+    fontWeight: tokens.font.weight.bold,
+  },
+  directionsBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    gap: 4,
+    paddingHorizontal: tokens.spacing.md,
+    paddingVertical: tokens.spacing.sm,
+    borderRadius: tokens.radius.full,
+    marginBottom: tokens.spacing.xs,
+  },
+  directionsBtnText: {
+    color: '#FFFFFF',
+    fontSize: tokens.font.size.md,
+    fontWeight: tokens.font.weight.semibold,
   },
   list: {
     maxHeight: 260,
