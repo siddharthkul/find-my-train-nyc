@@ -32,6 +32,10 @@ yarn-error.*
 
 # local env files
 .env*.local
+.env
+
+# Cursor IDE (symlinks to .agents/)
+.cursor/
 
 # typescript
 *.tsbuildinfo
