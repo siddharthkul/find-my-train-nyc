@@ -17,7 +17,7 @@ A real-time NYC subway tracker built with React Native and Expo, inspired by App
 - Tap any station to see upcoming arrivals in a unified bottom sheet
 - Uptown / Downtown arrival times with route badges
 - Apple Maps-style active station marker (colored circle with route letter + pointer)
-- Nearest station auto-detected based on your location
+- Nearest station auto-detected based on map center
 
 **Walking Directions**
 - In-app walking route to the nearest subway entrance
@@ -39,8 +39,8 @@ A real-time NYC subway tracker built with React Native and Expo, inspired by App
 - Clean map with POIs hidden
 
 **Service Alerts**
-- Live MTA service alerts displayed in the bottom sheet
-- Filterable by affected route
+- MTA service alert data ingestion (alert store + hooks in place)
+- UI integration coming soon
 
 ## Getting Started
 
@@ -102,7 +102,7 @@ src/
 │   │   ├── subwayStations.ts      # Static station data (name, lat/lng, routes)
 │   │   ├── subwayLines.ts         # Static polyline data for subway routes
 │   │   ├── subwayEntrances.ts     # MTA entrance data (SODA API)
-│   │   └── mockTrainFeed.ts       # Mock data for API-key-less development
+│   │   └── mockTrainFeed.ts       # Mock data fallback when offline
 │   └── directions/
 │       └── walkingRoute.ts        # Valhalla pedestrian routing + polyline decoder
 ├── theme/
